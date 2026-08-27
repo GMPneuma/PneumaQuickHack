@@ -1,0 +1,16 @@
+.pneuma-quickhack-awareness.aware {
+  color: green;
+}
+
+.pneuma-quickhack-awareness.unaware {
+  color: red;
+}
+
+.pneuma-quickhack-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pneuma-quickhack-item .weapon-image img {
+  filter: drop-shadow(0 0 0.2rem var(--cpr-red, #c90000));
+}

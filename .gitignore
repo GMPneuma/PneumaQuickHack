@@ -1,0 +1,10 @@
+# Development and release artifacts
+node_modules/
+dist/
+*.zip
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
