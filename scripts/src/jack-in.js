@@ -18,15 +18,6 @@ function getSingleTarget() {
   return targets[0];
 }
 
-export async function executeJackInFromSelection(options = {}) {
-  const controlled = canvas.tokens.controlled;
-  if (controlled.length !== 1) {
-    notify("warn", "PNEUMA_QUICKHACK.Error.SelectOneToken");
-    return null;
-  }
-  return executeJackIn(controlled[0].actor, { ...options, sourceToken: controlled[0] });
-}
-
 export async function executeJackIn(sourceActor, options = {}) {
   if (!sourceActor) return notify("error", "PNEUMA_QUICKHACK.Error.SourceHasNoActor");
   const sourceToken = options.sourceToken ?? findSourceToken(sourceActor);

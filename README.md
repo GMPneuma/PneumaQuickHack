@@ -27,7 +27,7 @@ To use it:
 2. If the actor has multiple tokens on the scene, select the token performing the action.
 3. Click the network icon on the equipped **Quickhack** item to Jack In.
 
-The action requires the Netrunner role, checks ownership and the 25-square range, rolls Interface against WILL, and privately alerts an aware target according to the current macro-compatible defaults.
+The action requires the Netrunner role, checks ownership and the 25-square range, rolls Interface against WILL, and alerts an aware target according to the configured message settings.
 
 ## GM Settings
 
@@ -39,12 +39,6 @@ Open **Configure Settings -> Module Settings -> Quickhack Message Settings**. Th
 - **NPC Is Targeted**: choose detection-alert recipients and whether the alert includes roll totals.
 
 Anonymous shared results keep the underlying player Interface card private to the Netrunner's owners and GMs. NPC Interface rolls remain blind to GMs.
-
-For temporary macro compatibility, use:
-
-```js
-game.modules.get("pneuma-quickhack").api.jackIn();
-```
 
 ## Testing
 

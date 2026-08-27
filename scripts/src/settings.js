@@ -8,12 +8,6 @@ import {
 
 const ROUTING_SETTING = "messageRouting";
 
-const LEGACY_SETTINGS = Object.freeze({
-  RESULT_VISIBILITY: "jackInResultVisibility",
-  DETECTED_NOTIFICATION: "detectedJackInNotification",
-  CONCEAL_IDENTITY: "concealNetrunnerIdentity"
-});
-
 export class QuickhackMessageSettings extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
@@ -81,15 +75,6 @@ export function registerModuleSettings() {
     restricted: true
   });
 
-  game.settings.register(MODULE_ID, LEGACY_SETTINGS.RESULT_VISIBILITY, {
-    scope: "world", config: false, type: String, default: "public"
-  });
-  game.settings.register(MODULE_ID, LEGACY_SETTINGS.DETECTED_NOTIFICATION, {
-    scope: "world", config: false, type: String, default: "targetOwners"
-  });
-  game.settings.register(MODULE_ID, LEGACY_SETTINGS.CONCEAL_IDENTITY, {
-    scope: "world", config: false, type: Boolean, default: true
-  });
 }
 
 export function getRoutingConfig() {
