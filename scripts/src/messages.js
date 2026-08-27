@@ -90,55 +90,42 @@ function quickhackResultContent(data, anonymous, showAwareness) {
     )}</strong></p>
     ${showAwareness ? `<p>${data.targetToken.name} <strong class="pneuma-quickhack-awareness ${data.targetAlerted ? "aware" : "unaware"}">${game.i18n.localize(
       data.targetAlerted ? "PNEUMA_QUICKHACK.Quickhack.TargetAlerted" : "PNEUMA_QUICKHACK.Quickhack.TargetNotAlerted"
-    )}</strong></p>` : ""}`;
+    )}</strong></p>` : ""}
+    ${data.targetAlerted ? forceOutButton() : ""}`;
 }
 
-function quickhackAlertContent(data) {
-  const heading = data.hideSourceInTargetResult
-    ? game.i18n.format("PNEUMA_QUICKHACK.Quickhack.TargetDetectsAnonymous", { target: data.targetToken.name })
-    : game.i18n.format("PNEUMA_QUICKHACK.Quickhack.TargetDetectsNamed", {
-        target: data.targetToken.name,
-        source: data.sourceToken.name
-      });
-  const totals = data.includeTargetAlertTotals
-    ? `<p>${game.i18n.localize("PNEUMA_QUICKHACK.Result.InterfaceRoll")}: <strong>${data.interfaceTotal}</strong></p>
-       <p>${game.i18n.localize("PNEUMA_QUICKHACK.Quickhack.Difficulty")}: <strong>DV${data.quickhack.dv}</strong></p>`
-    : "";
-  return `<h3>${game.i18n.localize("PNEUMA_QUICKHACK.Quickhack.AlertTitle")}</h3>
-    <p><strong>${heading}</strong></p>
-    <p>${game.i18n.format("PNEUMA_QUICKHACK.Quickhack.SuccessfulHack", { quickhack: data.quickhack.name })}</p>
-    ${totals}
+function quickhackTargetNoticeContent(data) {
+  const source = data.hideSourceInTargetResult
+    ? game.i18n.localize("PNEUMA_QUICKHACK.Result.UnknownNetrunner")
+    : data.sourceToken.name;
+  return `<h3>${game.i18n.localize("PNEUMA_QUICKHACK.Quickhack.TargetNoticeTitle")}</h3>
+    <p><strong>${game.i18n.format("PNEUMA_QUICKHACK.Quickhack.TargetNotice", {
+      source,
+      quickhack: data.quickhack.name
+    })}</strong></p>
     ${forceOutButton()}`;
 }
 
-async function postTargetAlert(data, content, type) {
-  const targetAlertAudience = resolveTargetAlertAudience({
-    configuredAudience: data.targetAlertAudience,
-    targetIsPlayer: data.targetIsPlayer,
-    shareTargetAwareness: data.shareTargetAwareness
-  });
+export function missingTargetNoticeRecipients(delivery, targetOwnerRecipients) {
+  if (!delivery.whisper?.length) return [];
+  const delivered = new Set(delivery.whisper);
+  return targetOwnerRecipients.filter((id) => !delivered.has(id));
+}
+
+async function postQuickhackTargetNotice(data, recipients) {
   const speaker = data.hideSourceInTargetResult
     ? { alias: game.i18n.localize("PNEUMA_QUICKHACK.Result.UnknownNetrunner") }
     : ChatMessage.getSpeaker({ actor: data.sourceActor, token: data.sourceToken.document });
-  const alertMessage = {
+  return ChatMessage.create({
     speaker,
-    content,
+    whisper: recipients,
+    content: quickhackTargetNoticeContent(data),
     flags: { [MODULE_ID]: {
-      type,
-      gmOnly: targetAlertAudience === "gm",
+      type: "quickhackTargetNotice",
+      gmOnly: false,
       forceOutContext: { sourceActorUuid: data.sourceActor.uuid, targetActorUuid: data.targetActor.uuid }
     } }
-  };
-  if (targetAlertAudience === "public") return ChatMessage.create(alertMessage);
-  if (targetAlertAudience === "gm") {
-    return ChatMessage.create({ ...alertMessage, whisper: data.gmRecipients, blind: true });
-  }
-  if (targetAlertAudience === "targetOwners" && data.targetOwnerRecipients.length > 0) {
-    return ChatMessage.create({
-      ...alertMessage,
-      whisper: [...new Set([...data.gmRecipients, ...data.targetOwnerRecipients])]
-    });
-  }
+  });
 }
 
 export async function postQuickhackResults(data) {
@@ -147,15 +134,19 @@ export async function postQuickhackResults(data) {
   const speaker = anonymous
     ? { alias: game.i18n.localize("PNEUMA_QUICKHACK.Result.UnknownNetrunner") }
     : ChatMessage.getSpeaker({ actor: data.sourceActor, token: data.sourceToken.document });
+  const delivery = mainMessageDelivery(data);
   const resultMessage = await ChatMessage.create({
     speaker,
-    ...mainMessageDelivery(data),
+    ...delivery,
     content: quickhackResultContent(data, anonymous, audienceCanSeeAwareness),
     flags: { [MODULE_ID]: {
       type: "quickhackResult",
       sourceActorUuid: data.sourceActor.uuid,
+      sourceTokenUuid: data.sourceToken.document.uuid,
       targetActorUuid: data.targetActor.uuid,
+      targetTokenUuid: data.targetToken.document.uuid,
       quickhackId: data.quickhack.id,
+      damageFormula: data.quickhack.damageFormula ?? null,
       success: data.success,
       targetAlerted: data.targetAlerted,
       gmOnly: data.resultAudience.visibility === "gm"
@@ -171,7 +162,8 @@ export async function postQuickhackResults(data) {
     });
   }
   if (data.targetAlerted) {
-    await postTargetAlert(data, quickhackAlertContent(data), "quickhackAwareness");
+    const missingOwners = missingTargetNoticeRecipients(delivery, data.targetOwnerRecipients);
+    if (missingOwners.length > 0) await postQuickhackTargetNotice(data, missingOwners);
   }
   return resultMessage;
 }

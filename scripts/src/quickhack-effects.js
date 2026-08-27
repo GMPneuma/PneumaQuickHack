@@ -25,12 +25,6 @@ async function createStatusEffect(actor, { name, icon, statuses = [], flags = {}
   return effect;
 }
 
-async function directDamage(actor, amount) {
-  const current = Number(foundry.utils.getProperty(actor, "system.derivedStats.hp.value"));
-  if (!Number.isFinite(current)) throw new Error("PNEUMA_QUICKHACK.Effect.HpUnreadable");
-  await actor.update({ "system.derivedStats.hp.value": current - amount });
-}
-
 async function applySonicShock(actor) {
   const pack = game.packs.get("cyberpunk-red-core.core_critical-injuries-head");
   const index = await pack?.getIndex({ fields: ["name"] });
@@ -113,12 +107,6 @@ async function resolveEffect({
       detailData.amount = amount;
       break;
     }
-    case "synapse-burnout": {
-      const damage = (await new Roll("3d6").evaluate()).total;
-      await directDamage(targetActor, damage);
-      detailData.damage = damage;
-      break;
-    }
     case "system-reset": {
       const statuses = nativeStatuses(["unconscious", "prone"]);
       if (statuses.length) {
@@ -149,7 +137,7 @@ async function resolveEffect({
 }
 
 export async function applyQuickhackEffect({ sourceActor, targetActor, quickhack, resultMessage }) {
-  if (!quickhack || quickhack.id === "lure") {
+  if (!quickhack || quickhack.id === "synapse-burnout" || quickhack.id === "lure") {
     if (quickhack?.id === "lure") {
       const recipients = [...new Set([
         ...ChatMessage.getWhisperRecipients("GM").map((user) => user.id),

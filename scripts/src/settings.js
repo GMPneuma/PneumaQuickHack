@@ -7,6 +7,7 @@ import {
 } from "./routing-config.js";
 
 const ROUTING_SETTING = "messageRouting";
+const REQUIRE_OWNED_QUICKHACKS_SETTING = "requireOwnedQuickhacks";
 
 export class QuickhackMessageSettings extends FormApplication {
   static get defaultOptions() {
@@ -60,6 +61,15 @@ export class QuickhackMessageSettings extends FormApplication {
 }
 
 export function registerModuleSettings() {
+  game.settings.register(MODULE_ID, REQUIRE_OWNED_QUICKHACKS_SETTING, {
+    name: "PNEUMA_QUICKHACK.Settings.RequireOwnedQuickhacks.Name",
+    hint: "PNEUMA_QUICKHACK.Settings.RequireOwnedQuickhacks.Hint",
+    scope: "world",
+    config: true,
+    restricted: true,
+    type: Boolean,
+    default: false
+  });
   game.settings.register(MODULE_ID, ROUTING_SETTING, {
     scope: "world",
     config: false,
@@ -83,4 +93,8 @@ export function getRoutingConfig() {
 
 export function getJackInSettings(context) {
   return mapRoutingToRuntime(getRoutingConfig(), context);
+}
+
+export function requireOwnedQuickhacks() {
+  return game.settings.get(MODULE_ID, REQUIRE_OWNED_QUICKHACKS_SETTING) === true;
 }

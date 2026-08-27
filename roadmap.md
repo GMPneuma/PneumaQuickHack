@@ -186,7 +186,7 @@ Because connections are not tracked, the module will not technically verify that
 - **Native Interface workflow:** Implemented for both player and NPC Netrunners, including the system modifier and LUCK dialog. NPC roll cards remain GM-only.
 - **Interface versus DV resolution:** Implemented; the Interface total must beat the DV.
 - **Configured result audience, identity, and NPC-awareness privacy:** Implemented.
-- **Successful target alerts:** Implemented with a Force Invader Out button.
+- **Successful target awareness:** Implemented without a second detection event. Successful non-Lure Quickhacks place Force Invader Out on the complete result. Target owners receive a minimal private notice only when they could not see that result; GMs are not sent a duplicate notice.
 - **Failed Quickhacks:** Implemented without a target alert or Force Invader Out button.
 - **Successful Lure:** Implemented without a target alert or Force Invader Out button.
 - **Mechanical Quickhack effects:** Scheduled for Phase 6.
@@ -248,7 +248,7 @@ Before implementing lasting effects, determine how the Cyberpunk RED system hand
 - **Sonic Shock:** Adds CPR's native Damaged Ear Critical Injury without bonus damage. Players remove it manually when the effect ends.
 - **Overheat:** Guided handling only. Cyberpunk RED registers no native On Fire status, so this module does not create a substitute status or automate ongoing fire damage.
 - **Slow:** Rolls the 1d6 penalty and reports it as guidance. The module does not change or track MOVE.
-- **Synapse Burnout:** Automated with 3d6 damage directly to HP, bypassing armor without ablation.
+- **Synapse Burnout:** Uses CPR's native-style 3d6 damage roll card. The Netrunner rolls damage from the successful Quickhack result, and the GM applies it to the original target with the native lightning-bolt control. Damage is treated as brain damage so it bypasses armor without ablation; Quickhack damage criticals and their +5 bonus are disabled.
 - **System Reset:** Applies only Unconscious and/or Prone statuses registered natively by the active system, without timers or wake-up tracking. Players remove them manually. If neither exists, it provides guided handling.
 - **Short Circuit:** Guided GM handling identifies the three-component choice and duration because the system has no universal safe cyberware-disable API.
 - **Cyberware Malfunction:** Guided Netrunner handling identifies the component choice, attached-option consequence, and duration.
@@ -283,9 +283,9 @@ Investigate a reliable and performant way to test visibility from the Netrunner'
 
 Add Passwall and Breach workflows after the initial Jack-In and Quickhack features are stable.
 
-### Inventory-Required Quickhacks
+### Inventory-Required Quickhacks - Implemented
 
-Add an optional homebrew mode that limits available Quickhacks to items carried by the Netrunner. Define its item data model only after the unrestricted quickhack workflow is complete.
+The GM-only **Require Owned Quickhacks** world setting limits the picker to flagged Quickhack Items carried by the acting Netrunner. Items may be renamed and do not need to be equipped. The unrestricted mode remains the default.
 
 ### Net Action Accounting
 

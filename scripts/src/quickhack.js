@@ -3,18 +3,21 @@ import {
   canOperateActor, findNetrunnerRole, findSourceToken, getActorOwners, validateJackInRange
 } from "./foundry-utils.js";
 import { postQuickhackResults } from "./messages.js";
-import { QUICKHACKS, getQuickhack } from "./quickhack-catalog.js";
+import { QUICKHACKS, getOwnedQuickhacks, getQuickhack } from "./quickhack-catalog.js";
 import { applyQuickhackEffect } from "./quickhack-effects.js";
+import { attachQuickhackDamageAction } from "./quickhack-damage.js";
 import { isQuickhackSuccessful, resolveInterfaceRollAudience, resolveResultAudience } from "./rules.js";
 import { rollPlayerInterface } from "./rolls.js";
-import { getJackInSettings } from "./settings.js";
+import { getJackInSettings, requireOwnedQuickhacks } from "./settings.js";
 
 const notify = (level, key, data = {}) => ui.notifications[level](game.i18n.format(key, data));
 
-function chooseQuickhack() {
+function chooseQuickhack(availableQuickhacks) {
   let firstOption = true;
   const options = ["Simple", "Standard", "Difficult", "Advanced"].map((tier) => {
-    const entries = QUICKHACKS.filter((quickhack) => quickhack.tier === tier)
+    const tierQuickhacks = availableQuickhacks.filter((quickhack) => quickhack.tier === tier);
+    if (tierQuickhacks.length === 0) return "";
+    const entries = tierQuickhacks
       .map((quickhack) => {
         const checked = firstOption ? " checked" : "";
         firstOption = false;
@@ -24,7 +27,7 @@ function chooseQuickhack() {
         </label>`;
       })
       .join("");
-    const dv = QUICKHACKS.find((quickhack) => quickhack.tier === tier)?.dv;
+    const dv = tierQuickhacks[0].dv;
     return `<fieldset class="pneuma-quickhack-picker-tier pneuma-quickhack-tier-${tier.toLowerCase()}">
       <legend>${tier} - DV${dv}</legend>
       ${entries}
@@ -88,11 +91,22 @@ export async function executeQuickhack(sourceActor, options = {}) {
   const range = validateJackInRange(sourceToken, targetToken);
   if (!range.valid) return notify("warn", "PNEUMA_QUICKHACK.Error.OutOfRange", { maximum: JACK_IN_RANGE_SQUARES });
 
-  const requestedQuickhack = options.quickhack ?? await chooseQuickhack();
+  const ownedMode = requireOwnedQuickhacks();
+  const availableQuickhacks = ownedMode ? getOwnedQuickhacks(sourceActor) : QUICKHACKS;
+  if (availableQuickhacks.length === 0) {
+    return notify("warn", "PNEUMA_QUICKHACK.Quickhack.NoOwnedQuickhacks", { actor: sourceActor.name });
+  }
+  const requestedQuickhack = options.quickhack ?? await chooseQuickhack(availableQuickhacks);
   const quickhack = typeof requestedQuickhack === "string"
     ? getQuickhack(requestedQuickhack)
     : requestedQuickhack;
   if (!quickhack) return null;
+  if (ownedMode && !availableQuickhacks.some((available) => available.id === quickhack.id)) {
+    return notify("warn", "PNEUMA_QUICKHACK.Quickhack.NotOwned", {
+      actor: sourceActor.name,
+      quickhack: quickhack.name
+    });
+  }
   const sourceIsPlayer = sourceActor.hasPlayerOwner;
   const targetIsPlayer = targetActor.hasPlayerOwner;
   const config = { ...getJackInSettings({ sourceIsPlayer, targetIsPlayer }), ...options };
@@ -102,7 +116,7 @@ export async function executeQuickhack(sourceActor, options = {}) {
   const rollAudience = sourceIsPlayer
     ? resolveInterfaceRollAudience({ resultAudience, concealIdentity: config.hideSourceInTargetResult, gmRecipients, sourceOwnerRecipients })
     : { visibility: "gm", recipients: gmRecipients };
-  const interfaceTotal = await rollPlayerInterface({
+  const interfaceRoll = await rollPlayerInterface({
     sourceActor,
     sourceToken,
     netrunnerRole,
@@ -110,11 +124,18 @@ export async function executeQuickhack(sourceActor, options = {}) {
     rollTitle: game.i18n.format("PNEUMA_QUICKHACK.Roll.AttemptingQuickhack", {
       quickhack: quickhack.name,
       target: targetToken.name
-    })
+    }),
+    returnMessage: true
   });
-  if (interfaceTotal === null) return null;
+  if (interfaceRoll === null) return null;
+  const interfaceTotal = interfaceRoll.total;
 
   const success = isQuickhackSuccessful(interfaceTotal, quickhack.dv);
+  if (success && quickhack.damageFormula) {
+    await attachQuickhackDamageAction(interfaceRoll.message, {
+      sourceActor, sourceToken, targetActor, targetToken, quickhack
+    });
+  }
   const targetAlerted = success && !quickhack.silentOnSuccess;
   const resultMessage = await postQuickhackResults({
     sourceActor, sourceToken, targetActor, targetToken, quickhack, interfaceTotal,

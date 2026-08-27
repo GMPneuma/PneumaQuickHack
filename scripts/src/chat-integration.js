@@ -1,6 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { beginForceOut } from "./force-out.js";
 import { canOperateActor } from "./foundry-utils.js";
+import { rollQuickhackDamage } from "./quickhack-damage.js";
 
 export function registerChatIntegration() {
   Hooks.on("renderChatMessage", async (message, html) => {
@@ -15,6 +16,26 @@ export function registerChatIntegration() {
         content.prepend(banner);
       }
     }
+    const damageButton = root?.querySelector?.(".pneuma-quickhack-roll-damage");
+    if (damageButton) {
+      const sourceActorUuid = message.getFlag(MODULE_ID, "sourceActorUuid");
+      const sourceActor = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+      if (!sourceActor || !canOperateActor(sourceActor)) {
+        damageButton.remove();
+      } else {
+        damageButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          damageButton.disabled = true;
+          try {
+            await rollQuickhackDamage(message);
+          } finally {
+            damageButton.disabled = false;
+          }
+        });
+      }
+    }
+
     const button = html[0]?.querySelector?.(".pneuma-quickhack-force-out")
       ?? html.querySelector?.(".pneuma-quickhack-force-out");
     if (!button) return;

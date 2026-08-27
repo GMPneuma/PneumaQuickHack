@@ -16,7 +16,10 @@ import {
   mapRoutingToRuntime,
   resolveTargetAlertAudience
 } from "../scripts/src/routing-config.js";
-import { QUICKHACKS, getQuickhack } from "../scripts/src/quickhack-catalog.js";
+import { QUICKHACKS, getOwnedQuickhacks, getQuickhack } from "../scripts/src/quickhack-catalog.js";
+import { isQuickhackDamageContextValid } from "../scripts/src/quickhack-damage.js";
+import { isQuickhackHotbarDrop } from "../scripts/src/hotbar-rules.js";
+import { missingTargetNoticeRecipients } from "../scripts/src/messages.js";
 
 test("defender ejects the Netrunner only by beating Interface", () => {
   assert.equal(isNetrunnerEjected(15, 14), true);
@@ -34,6 +37,69 @@ test("catalog contains all eleven CEMK Quickhacks and keeps Lure silent", () => 
   assert.equal(QUICKHACKS.length, 11);
   assert.deepEqual([...new Set(QUICKHACKS.map((quickhack) => quickhack.dv))], [6, 8, 10, 12]);
   assert.equal(getQuickhack("lure").silentOnSuccess, true);
+});
+
+test("only Synapse Burnout defines native damage", () => {
+  assert.deepEqual(
+    QUICKHACKS.filter((quickhack) => quickhack.damageFormula).map(({ id, damageFormula }) => ({ id, damageFormula })),
+    [{ id: "synapse-burnout", damageFormula: "3d6" }]
+  );
+});
+
+test("damage context must match a successful damaging Quickhack", () => {
+  const quickhack = getQuickhack("synapse-burnout");
+  const valid = {
+    type: "quickhackAttackRoll",
+    success: true,
+    sourceActorUuid: "Actor.source",
+    targetActorUuid: "Actor.target",
+    quickhackId: quickhack.id,
+    damageFormula: quickhack.damageFormula
+  };
+  assert.equal(isQuickhackDamageContextValid(valid, quickhack), true);
+  assert.equal(isQuickhackDamageContextValid({ ...valid, success: false }, quickhack), false);
+  assert.equal(isQuickhackDamageContextValid({ ...valid, damageFormula: "4d6" }, quickhack), false);
+});
+
+test("hotbar integration recognizes only actor-bound Quickhack actions", () => {
+  assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "jack-in", actorUuid: "Actor.source" }), true);
+  assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "quickhack", actorUuid: "Actor.source" }), true);
+  assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "attack", actorUuid: "Actor.source" }), false);
+  assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "jack-in" }), false);
+});
+
+test("Quickhack target notices are sent only to owners missing the complete result", () => {
+  assert.deepEqual(missingTargetNoticeRecipients({ whisper: [] }, ["target", "gm"]), []);
+  assert.deepEqual(
+    missingTargetNoticeRecipients({ whisper: ["source", "gm"] }, ["target", "gm"]),
+    ["target"]
+  );
+  assert.deepEqual(
+    missingTargetNoticeRecipients({ whisper: ["source", "target", "gm"] }, ["target", "gm"]),
+    []
+  );
+});
+
+test("owned Quickhack mode recognizes flagged inventory Items regardless of name", () => {
+  const actor = {
+    items: [
+      { name: "Renamed Hack", getFlag: () => "lure" },
+      { name: "Ordinary Gear", getFlag: () => undefined },
+      { name: "Another Hack", getFlag: () => "system-reset" }
+    ]
+  };
+  assert.deepEqual(getOwnedQuickhacks(actor).map((quickhack) => quickhack.id), ["lure", "system-reset"]);
+});
+
+test("owned Quickhack mode ignores unknown and duplicate inventory flags", () => {
+  const actor = {
+    items: [
+      { getFlag: () => "slow" },
+      { getFlag: () => "slow" },
+      { getFlag: () => "not-a-quickhack" }
+    ]
+  };
+  assert.deepEqual(getOwnedQuickhacks(actor).map((quickhack) => quickhack.id), ["slow"]);
 });
 
 test("target notices when WILL beats Interface", () => {

@@ -1,11 +1,24 @@
 import { executeJackIn } from "./jack-in.js";
 import { isQuickhackItem } from "./jack-in-item.js";
-import { JACK_IN_RANGE_SQUARES } from "./constants.js";
+import { JACK_IN_RANGE_SQUARES, QUICKHACK_ICON } from "./constants.js";
 import { executeQuickhack } from "./quickhack.js";
 
 function rootElement(html) {
   if (html instanceof HTMLElement) return html;
   return html?.[0] ?? null;
+}
+
+function makeActionDraggable(action, item, actor, actionId) {
+  action.draggable = true;
+  action.addEventListener("dragstart", (event) => {
+    event.stopImmediatePropagation();
+    event.dataTransfer?.setData("text/plain", JSON.stringify({
+      type: "Macro",
+      uuid: item.uuid,
+      pneumaQuickhackAction: actionId,
+      actorUuid: actor.uuid
+    }));
+  }, true);
 }
 
 function decorateJackInRows(app, root) {
@@ -14,6 +27,8 @@ function decorateJackInRows(app, root) {
     const row = root.querySelector(`.weapon-grid[data-item-id="${item.id}"]`);
     if (!row) continue;
     row.classList.add("pneuma-quickhack-item");
+    const itemImage = row.querySelector(".weapon-image img");
+    if (itemImage) itemImage.src = QUICKHACK_ICON;
     row.querySelector(".weapon-mode")?.classList.add("pneuma-quickhack-hidden");
     const ammo = row.querySelector(".weapon-ammo");
     if (ammo) ammo.textContent = game.i18n.localize("PNEUMA_QUICKHACK.Item.NetAction");
@@ -30,10 +45,12 @@ function decorateJackInRows(app, root) {
       attack.dataset.pneumaQuickhackAction = "jack-in";
       const jackInLabel = game.i18n.localize("PNEUMA_QUICKHACK.Item.UseJackIn");
       attack.setAttribute("data-tooltip", jackInLabel);
+      attack.setAttribute("title", jackInLabel);
       attack.setAttribute("aria-label", jackInLabel);
+      makeActionDraggable(attack, item, app.actor, "jack-in");
       const icon = attack.querySelector("i");
       if (icon) {
-        icon.className = "fas fa-network-wired red-fg";
+        icon.className = "fas fa-network-wired fa-fw red-fg";
         icon.setAttribute("data-tooltip", game.i18n.localize("PNEUMA_QUICKHACK.Item.UseJackIn"));
       }
     }
@@ -43,10 +60,12 @@ function decorateJackInRows(app, root) {
       quickhack.dataset.pneumaQuickhackAction = "quickhack";
       const quickhackLabel = game.i18n.localize("PNEUMA_QUICKHACK.Item.UseQuickhack");
       quickhack.setAttribute("data-tooltip", quickhackLabel);
+      quickhack.setAttribute("title", quickhackLabel);
       quickhack.setAttribute("aria-label", quickhackLabel);
+      makeActionDraggable(quickhack, item, app.actor, "quickhack");
       const icon = quickhack.querySelector("i");
       if (icon) {
-        icon.className = "fas fa-microchip red-fg";
+        icon.className = "fas fa-microchip fa-fw red-fg";
         icon.setAttribute("data-tooltip", game.i18n.localize("PNEUMA_QUICKHACK.Item.UseQuickhack"));
       }
     }

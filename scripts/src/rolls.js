@@ -80,7 +80,8 @@ export async function rollPlayerInterface({
   netrunnerRole,
   messageAudience,
   rollTitle,
-  rollHeader = rollTitle
+  rollHeader = rollTitle,
+  returnMessage = false
 }) {
   let cprRoll = netrunnerRole.createRoll("roleAbility", sourceActor, { rollSubType: "mainRoleAbility" });
   if (rollTitle) cprRoll.rollTitle = rollTitle;
@@ -92,7 +93,7 @@ export async function rollPlayerInterface({
   cprRoll = await netrunnerRole.confirmRoll(cprRoll);
   await cprRoll.roll();
   const content = await renderTemplate(cprRoll.rollCard, cprRoll);
-  await ChatMessage.create({
+  const message = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken.document }),
     whisper: messageAudience.visibility === "public" ? [] : messageAudience.recipients,
     blind: messageAudience.visibility === "gm",
@@ -102,7 +103,8 @@ export async function rollPlayerInterface({
       gmOnly: messageAudience.visibility === "gm"
     } }
   });
-  return Number(cprRoll.resultTotal);
+  const total = Number(cprRoll.resultTotal);
+  return returnMessage ? { total, message } : total;
 }
 
 export async function rollNpcInterface({ sourceActor, sourceToken, targetToken, interfaceRank }) {

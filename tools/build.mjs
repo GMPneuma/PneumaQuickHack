@@ -12,7 +12,7 @@ if (relative(repositoryRoot, moduleOutput).startsWith("..")) {
 await rm(moduleOutput, { recursive: true, force: true });
 await mkdir(moduleOutput, { recursive: true });
 
-for (const path of ["module.json", "README.md", "LICENSE", "lang", "scripts", "styles", "templates"]) {
+for (const path of ["module.json", "README.md", "LICENSE", "icons", "lang", "scripts", "styles", "templates"]) {
   await cp(join(repositoryRoot, path), join(moduleOutput, path), { recursive: true });
 }
 
