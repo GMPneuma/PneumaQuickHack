@@ -1,1 +1,1 @@
-# Pneuma-QuickHack
+# PneumaQuickHack
