@@ -1,4 +1,4 @@
-async function rollCriticalD10() {
+export async function rollCriticalD10() {
   const initial = (await new Roll("1d10").evaluate()).total;
   if (initial === 10) {
     const extra = (await new Roll("1d10").evaluate()).total;
@@ -11,8 +11,80 @@ async function rollCriticalD10() {
   return { initial, adjustment: 0, label: null };
 }
 
-export async function rollPlayerInterface({ sourceActor, sourceToken, netrunnerRole }) {
+export async function rollForceOutConcentration({ defenderActor, messageAudience }) {
+  const concentration = defenderActor.items.find(
+    (item) => item.type === "skill" && item.name.trim().toLowerCase() === "concentration"
+  );
+  if (!concentration) throw new Error("PNEUMA_QUICKHACK.Error.ConcentrationMissing");
+
+  let cprRoll = concentration.createRoll("skill", defenderActor);
+  const keepRoll = await cprRoll.handleRollDialog(
+    { ctrlKey: false, metaKey: false, type: "chat" },
+    defenderActor,
+    concentration
+  );
+  if (!keepRoll) return null;
+  cprRoll = await concentration.confirmRoll(cprRoll);
+  await cprRoll.roll();
+  const content = await renderTemplate(cprRoll.rollCard, cprRoll);
+  const message = await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor: defenderActor }),
+    whisper: messageAudience.visibility === "public" ? [] : messageAudience.recipients,
+    blind: messageAudience.visibility === "gm",
+    content,
+    flags: { [MODULE_ID]: {
+      type: "forceOutDefenseRoll",
+      defenderActorUuid: defenderActor.uuid,
+      resultTotal: Number(cprRoll.resultTotal),
+      gmOnly: messageAudience.visibility === "gm"
+    } }
+  });
+  return { total: Number(cprRoll.resultTotal), messageId: message.id };
+}
+
+export async function rollForceOutResistance({
+  netrunnerActor,
+  netrunnerRole,
+  defenderActor,
+  gmRecipients
+}) {
+  let cprRoll = netrunnerRole.createRoll("roleAbility", netrunnerActor, {
+    rollSubType: "mainRoleAbility"
+  });
+  cprRoll.rollTitle = game.i18n.format("PNEUMA_QUICKHACK.ForceOut.InterfaceDialogTitle", {
+    target: defenderActor.name
+  });
+  cprRoll.pneumaContextHeader = cprRoll.rollTitle;
+  const keepRoll = await cprRoll.handleRollDialog(
+    { ctrlKey: false, metaKey: false, type: "chat" },
+    netrunnerActor,
+    netrunnerRole
+  );
+  if (!keepRoll) return null;
+  cprRoll = await netrunnerRole.confirmRoll(cprRoll);
+  await cprRoll.roll();
+  const content = await renderTemplate(cprRoll.rollCard, cprRoll);
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor: netrunnerActor }),
+    whisper: gmRecipients,
+    blind: true,
+    content,
+    flags: { [MODULE_ID]: { type: "forceOutResistanceRoll", gmOnly: true } }
+  });
+  return Number(cprRoll.resultTotal);
+}
+
+export async function rollPlayerInterface({
+  sourceActor,
+  sourceToken,
+  netrunnerRole,
+  messageAudience,
+  rollTitle,
+  rollHeader = rollTitle
+}) {
   let cprRoll = netrunnerRole.createRoll("roleAbility", sourceActor, { rollSubType: "mainRoleAbility" });
+  if (rollTitle) cprRoll.rollTitle = rollTitle;
+  if (rollHeader) cprRoll.pneumaContextHeader = rollHeader;
   const keepRoll = await cprRoll.handleRollDialog(
     { ctrlKey: false, metaKey: false, type: "macro" }, sourceActor, netrunnerRole
   );
@@ -22,7 +94,13 @@ export async function rollPlayerInterface({ sourceActor, sourceToken, netrunnerR
   const content = await renderTemplate(cprRoll.rollCard, cprRoll);
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken.document }),
-    content
+    whisper: messageAudience.visibility === "public" ? [] : messageAudience.recipients,
+    blind: messageAudience.visibility === "gm",
+    content,
+    flags: { [MODULE_ID]: {
+      type: "interfaceRoll",
+      gmOnly: messageAudience.visibility === "gm"
+    } }
   });
   return Number(cprRoll.resultTotal);
 }
@@ -42,7 +120,8 @@ export async function rollNpcInterface({ sourceActor, sourceToken, targetToken, 
   await roll.toMessage(
     {
       speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken.document }),
-      flavor
+      flavor,
+      flags: { [MODULE_ID]: { type: "npcInterfaceRoll", gmOnly: true } }
     },
     { rollMode: "blindroll" }
   );
@@ -65,7 +144,9 @@ export async function rollTargetWill({ targetActor, targetToken, gmRecipients })
     speaker: ChatMessage.getSpeaker({ actor: targetActor, token: targetToken.document }),
     whisper: gmRecipients,
     blind: true,
-    content: `<div>${flavor}<br><strong>${game.i18n.localize("PNEUMA_QUICKHACK.Roll.Total")}:</strong> ${roll.total}</div>`
+    content: `<div>${flavor}<br><strong>${game.i18n.localize("PNEUMA_QUICKHACK.Roll.Total")}:</strong> ${roll.total}</div>`,
+    flags: { [MODULE_ID]: { type: "targetWillRoll", gmOnly: true } }
   });
   return roll.total;
 }
+import { MODULE_ID } from "./constants.js";

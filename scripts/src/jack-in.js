@@ -1,10 +1,11 @@
-import { JACK_IN_DEFAULTS, JACK_IN_RANGE_SQUARES } from "./constants.js";
+import { JACK_IN_RANGE_SQUARES } from "./constants.js";
 import {
   canOperateActor, findNetrunnerRole, findSourceToken, getActorOwners, validateJackInRange
 } from "./foundry-utils.js";
 import { postJackInResults } from "./messages.js";
-import { isTargetAware, resolveResultAudience } from "./rules.js";
+import { isTargetAware, resolveInterfaceRollAudience, resolveResultAudience } from "./rules.js";
 import { rollNpcInterface, rollPlayerInterface, rollTargetWill } from "./rolls.js";
+import { getJackInSettings } from "./settings.js";
 
 const notify = (level, key, data = {}) => ui.notifications[level](game.i18n.format(key, data));
 
@@ -27,13 +28,12 @@ export async function executeJackInFromSelection(options = {}) {
 }
 
 export async function executeJackIn(sourceActor, options = {}) {
-  const config = { ...JACK_IN_DEFAULTS, ...options };
   if (!sourceActor) return notify("error", "PNEUMA_QUICKHACK.Error.SourceHasNoActor");
-  const sourceToken = config.sourceToken ?? findSourceToken(sourceActor);
+  const sourceToken = options.sourceToken ?? findSourceToken(sourceActor);
   if (!sourceToken) {
     return notify("warn", "PNEUMA_QUICKHACK.Error.SelectSourceToken", { actor: sourceActor.name });
   }
-  const targetToken = config.targetToken ?? getSingleTarget();
+  const targetToken = options.targetToken ?? getSingleTarget();
   if (!targetToken) return null;
   const targetActor = targetToken.actor;
   if (!targetActor) return notify("error", "PNEUMA_QUICKHACK.Error.TargetHasNoActor");
@@ -43,6 +43,13 @@ export async function executeJackIn(sourceActor, options = {}) {
   if (!canOperateActor(sourceActor)) {
     return notify("error", "PNEUMA_QUICKHACK.Error.NotAuthorized", { actor: sourceActor.name });
   }
+
+  const sourceIsPlayer = sourceActor.hasPlayerOwner;
+  const targetIsPlayer = targetActor.hasPlayerOwner;
+  const config = {
+    ...getJackInSettings({ sourceIsPlayer, targetIsPlayer }),
+    ...options
+  };
 
   const netrunnerRole = findNetrunnerRole(sourceActor);
   if (!netrunnerRole) {
@@ -57,10 +64,30 @@ export async function executeJackIn(sourceActor, options = {}) {
     return notify("warn", "PNEUMA_QUICKHACK.Error.OutOfRange", { maximum: JACK_IN_RANGE_SQUARES });
   }
 
-  const sourceIsPlayer = sourceActor.hasPlayerOwner;
   const gmRecipients = ChatMessage.getWhisperRecipients("GM").map((user) => user.id);
+  const sourceOwnerRecipients = getActorOwners(sourceActor);
+  const resultAudience = resolveResultAudience({
+    sourceIsPlayer,
+    configuredVisibility: config.resultVisibility,
+    gmRecipients,
+    sourceOwnerRecipients
+  });
+  const interfaceRollAudience = resolveInterfaceRollAudience({
+    resultAudience,
+    concealIdentity: config.hideSourceInTargetResult,
+    gmRecipients,
+    sourceOwnerRecipients
+  });
   const interfaceTotal = sourceIsPlayer
-    ? await rollPlayerInterface({ sourceActor, sourceToken, netrunnerRole })
+    ? await rollPlayerInterface({
+        sourceActor,
+        sourceToken,
+        netrunnerRole,
+        messageAudience: interfaceRollAudience,
+        rollTitle: game.i18n.format("PNEUMA_QUICKHACK.Roll.JackingInto", {
+          target: targetToken.name
+        })
+      })
     : await rollNpcInterface({ sourceActor, sourceToken, targetToken, interfaceRank });
   if (interfaceTotal === null) return null;
 
@@ -77,17 +104,15 @@ export async function executeJackIn(sourceActor, options = {}) {
     targetAware = isTargetAware(interfaceTotal, willTotal);
   }
 
-  const resultAudience = resolveResultAudience({
-    sourceIsPlayer,
-    configuredVisibility: config.resultVisibility,
-    gmRecipients,
-    sourceOwnerRecipients: getActorOwners(sourceActor)
-  });
   await postJackInResults({
     sourceActor, sourceToken, targetActor, targetToken, interfaceTotal,
     willTotal: targetIsNetrunner ? game.i18n.localize("PNEUMA_QUICKHACK.Result.Automatic") : willTotal,
     targetAware, resultAudience, targetOwnerRecipients: getActorOwners(targetActor),
-    awareTargetResultIsPublic: config.awareTargetResultIsPublic,
+    gmRecipients,
+    targetAlertAudience: config.targetAlertAudience,
+    includeTargetAlertTotals: config.includeTargetAlertTotals,
+    targetIsPlayer,
+    shareTargetAwareness: config.shareTargetAwareness,
     hideSourceInTargetResult: config.hideSourceInTargetResult
   });
   return {

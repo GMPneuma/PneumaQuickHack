@@ -2,15 +2,229 @@
   color: green;
 }
 
+.chat-message.pneuma-quickhack-gm-only {
+  border: 2px solid #7b2cbf;
+  box-shadow: inset 0 0 0 1px rgba(123, 44, 191, 0.35);
+}
+
+.pneuma-quickhack-gm-banner {
+  background: #7b2cbf;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: -0.25rem -0.25rem 0.55rem;
+  padding: 0.3rem 0.5rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pneuma-quickhack-gm-banner i {
+  margin-right: 0.3rem;
+}
+
 .pneuma-quickhack-awareness.unaware {
   color: red;
 }
+
+.pneuma-quickhack-outcome.success {
+  color: green;
+}
+
+.pneuma-quickhack-outcome.failure {
+  color: red;
+}
+
+.pneuma-quickhack-picker-prompt {
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+
+.pneuma-quickhack-picker-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1fr;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.pneuma-quickhack-picker-tier {
+  border: 1px solid var(--color-border-light-2, #777);
+  border-radius: 5px;
+  margin: 0;
+  padding: 0.45rem;
+}
+
+.pneuma-quickhack-picker-tier legend {
+  font-weight: 700;
+  padding: 0 0.25rem;
+}
+
+.pneuma-quickhack-tier-simple legend {
+  color: #207a3c;
+}
+
+.pneuma-quickhack-tier-standard legend {
+  color: #1769aa;
+}
+
+.pneuma-quickhack-tier-difficult legend {
+  color: #b05a00;
+}
+
+.pneuma-quickhack-tier-advanced legend {
+  color: #a51f35;
+}
+
+.pneuma-quickhack-picker-option {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  cursor: pointer;
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: auto 1fr;
+  margin: 0.3rem 0;
+  padding: 0.4rem 0.45rem;
+}
+
+.pneuma-quickhack-picker-option:hover,
+.pneuma-quickhack-picker-option:has(input:checked) {
+  background: rgba(159, 27, 27, 0.18);
+}
+
+.pneuma-quickhack-picker-option input {
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
 
 .pneuma-quickhack-hidden {
   visibility: hidden;
   pointer-events: none;
 }
 
+.pneuma-quickhack-force-out-actions {
+  border-top: 1px solid var(--color-border-light-2, #777);
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+}
+
+.pneuma-quickhack-force-out {
+  width: 100%;
+}
+
+.pneuma-quickhack-force-out i {
+  margin-right: 0.35rem;
+}
+
 .pneuma-quickhack-item .weapon-image img {
   filter: drop-shadow(0 0 0.2rem var(--cpr-red, #c90000));
+}
+
+.pneuma-quickhack-settings {
+  padding: 0.25rem;
+}
+
+.pneuma-settings-intro {
+  background: rgba(0, 0, 0, 0.08);
+  border-left: 3px solid var(--cpr-red, #9f1b1b);
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.pneuma-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pneuma-settings-card {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-border-light-2, #777);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  padding: 0.85rem;
+}
+
+.pneuma-settings-card h2 {
+  border-bottom: 1px solid var(--color-border-light-2, #777);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.85rem;
+  padding: 0 0 0.5rem;
+}
+
+.pneuma-settings-card h2 i {
+  color: var(--cpr-red, #9f1b1b);
+  margin-right: 0.3rem;
+}
+
+.pneuma-settings-field {
+  margin-bottom: 0.9rem;
+}
+
+.pneuma-settings-note {
+  background: rgba(0, 0, 0, 0.06);
+  border-left: 3px solid var(--cpr-red, #9f1b1b);
+  font-size: 0.9rem;
+  margin: 0 0 0.85rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.pneuma-settings-choice-spaced {
+  margin-top: 0.9rem;
+}
+
+.pneuma-settings-field > label,
+.pneuma-settings-choice legend {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.pneuma-settings-field select {
+  margin: 0;
+  width: 100%;
+}
+
+.pneuma-settings-choice {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.pneuma-settings-choice label {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.55rem;
+}
+
+.pneuma-settings-choice label:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.pneuma-settings-choice input[type="radio"] {
+  flex: 0 0 auto;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.pneuma-settings-footer button {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .pneuma-settings-grid {
+    grid-template-columns: 1fr;
+  }
 }

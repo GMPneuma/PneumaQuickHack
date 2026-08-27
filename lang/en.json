@@ -1,5 +1,5 @@
 {
-  "PNEUMA_QUICKHACK.Name": "Pneuma Quickhack",
+  "PNEUMA_QUICKHACK.Name": "Pneuma's Quickhack",
   "PNEUMA_QUICKHACK.Error.SelectOneToken": "Select exactly one source token.",
   "PNEUMA_QUICKHACK.Error.SelectSourceToken": "Select one active token for {actor}.",
   "PNEUMA_QUICKHACK.Error.TargetOneToken": "Target exactly one token.",
@@ -18,19 +18,107 @@
   "PNEUMA_QUICKHACK.Roll.CriticalSuccess": "<strong>Critical Success:</strong> +{value}",
   "PNEUMA_QUICKHACK.Roll.CriticalFailure": "<strong>Critical Failure:</strong> -{value}",
   "PNEUMA_QUICKHACK.Roll.Total": "Total",
+  "PNEUMA_QUICKHACK.Roll.JackingInto": "Rolling Interface - Jacking into {target}",
+  "PNEUMA_QUICKHACK.Roll.AttemptingQuickhack": "Rolling Interface - Attempting {quickhack} against {target}",
   "PNEUMA_QUICKHACK.Result.InterfaceVsWill": "Interface vs. WILL",
   "PNEUMA_QUICKHACK.Result.SourceJacksIntoTarget": "{source} jacks into {target}",
   "PNEUMA_QUICKHACK.Result.TargetDetectsAttempt": "{target} detects a Jack-In attempt",
+  "PNEUMA_QUICKHACK.Result.TargetDetectsAnonymousAttempt": "{target} detects a Jack-In attempt from an unknown Netrunner",
+  "PNEUMA_QUICKHACK.Result.TargetDetectsNamedAttempt": "{target} detects {source}'s Jack-In attempt",
+  "PNEUMA_QUICKHACK.Result.AnonymousAttempt": "An unknown Netrunner attempts to Jack In to {target}",
+  "PNEUMA_QUICKHACK.Result.DetectionAlert": "Jack-In Detection Alert",
   "PNEUMA_QUICKHACK.Result.InterfaceRoll": "Interface Roll",
   "PNEUMA_QUICKHACK.Result.WillTotal": "WILL Total",
   "PNEUMA_QUICKHACK.Result.TargetAware": "is aware",
   "PNEUMA_QUICKHACK.Result.TargetUnaware": "is unaware",
   "PNEUMA_QUICKHACK.Result.Automatic": "Automatic",
   "PNEUMA_QUICKHACK.Result.UnknownNetrunner": "Unknown Netrunner",
-  "PNEUMA_QUICKHACK.Item.JackInName": "Jack In to Person",
-  "PNEUMA_QUICKHACK.Item.JackInDescription": "Attempt to connect to the Neuroport of one targeted character within 25 squares. Equip this item and use its attack control from the Fight tab.",
+  "PNEUMA_QUICKHACK.Chat.GmOnly": "GM Only",
+  "PNEUMA_QUICKHACK.Item.Name": "Quickhack",
+  "PNEUMA_QUICKHACK.Item.JackInDescription": "Quickhacking controls. Equip this item to Jack In to a targeted character or perform a Quickhack from the Fight tab.",
   "PNEUMA_QUICKHACK.Item.NetAction": "NET Action",
   "PNEUMA_QUICKHACK.Item.Range": "Range {squares} squares",
   "PNEUMA_QUICKHACK.Item.UseJackIn": "Jack In to targeted character",
-  "PNEUMA_QUICKHACK.Item.Created": "Created the Jack In to Person item in the Items directory. Drag it onto Netrunner character sheets and equip it."
+  "PNEUMA_QUICKHACK.Item.UseQuickhack": "Perform a Quickhack",
+  "PNEUMA_QUICKHACK.Item.Created": "Created the Quickhack item in the Items directory. Drag it onto Netrunner character sheets and equip it.",
+  "PNEUMA_QUICKHACK.Quickhack.NotImplemented": "Quickhack effect automation is not yet implemented.",
+  "PNEUMA_QUICKHACK.Quickhack.SelectTitle": "Perform a Quickhack",
+  "PNEUMA_QUICKHACK.Quickhack.SelectPrompt": "Choose a Quickhack",
+  "PNEUMA_QUICKHACK.Quickhack.SelectionNote": "This phase resolves the Interface Check and target alert. Mechanical effects will be automated in the next phase.",
+  "PNEUMA_QUICKHACK.Quickhack.Perform": "Perform Quickhack",
+  "PNEUMA_QUICKHACK.Quickhack.ResultTitle": "Quickhack Result",
+  "PNEUMA_QUICKHACK.Quickhack.SourceUsesHack": "{source} uses {quickhack} against {target}",
+  "PNEUMA_QUICKHACK.Quickhack.Difficulty": "Difficulty",
+  "PNEUMA_QUICKHACK.Quickhack.Success": "Quickhack successful",
+  "PNEUMA_QUICKHACK.Quickhack.Failure": "Quickhack failed",
+  "PNEUMA_QUICKHACK.Quickhack.TargetAlerted": "is alerted",
+  "PNEUMA_QUICKHACK.Quickhack.TargetNotAlerted": "is not alerted",
+  "PNEUMA_QUICKHACK.Quickhack.AlertTitle": "Quickhack Detection Alert",
+  "PNEUMA_QUICKHACK.Quickhack.TargetDetectsAnonymous": "{target} detects a Quickhack from an unknown Netrunner",
+  "PNEUMA_QUICKHACK.Quickhack.TargetDetectsNamed": "{target} detects {source}'s Quickhack",
+  "PNEUMA_QUICKHACK.Quickhack.SuccessfulHack": "Successful Quickhack: {quickhack}",
+  "PNEUMA_QUICKHACK.Settings.JackInResultVisibility.Name": "Jack-In Results: Visible To",
+  "PNEUMA_QUICKHACK.Settings.JackInResultVisibility.Hint": "Choose who receives the completed Interface vs. WILL result and roll totals.",
+  "PNEUMA_QUICKHACK.Settings.DetectedNotification.Name": "Detection Alerts: Visible To",
+  "PNEUMA_QUICKHACK.Settings.DetectedNotification.Hint": "Choose who is told when a player-owned target detects a Jack-In attempt.",
+  "PNEUMA_QUICKHACK.Settings.ConcealIdentity.Name": "Shared Messages: Keep Netrunner Anonymous",
+  "PNEUMA_QUICKHACK.Settings.ConcealIdentity.Hint": "When enabled, messages shared with everyone or the target use Unknown Netrunner and hide the source name. The Netrunner's native Interface roll remains private to their owners and the GM. When disabled, shared messages identify the Netrunner.",
+  "PNEUMA_QUICKHACK.Settings.Choice.GmOnly": "GMs Only",
+  "PNEUMA_QUICKHACK.Settings.Choice.Everyone": "Everyone",
+  "PNEUMA_QUICKHACK.Settings.Choice.NetrunnerOwnersAndGm": "Netrunner Owners and GMs",
+  "PNEUMA_QUICKHACK.Settings.Choice.TargetOwnersOnly": "Target Owners and GMs",
+  "PNEUMA_QUICKHACK.Settings.Choice.RevealIdentity": "Yes - identify the Netrunner",
+  "PNEUMA_QUICKHACK.Settings.Choice.UseUnknownNetrunner": "No - use Unknown Netrunner",
+  "PNEUMA_QUICKHACK.Settings.Choice.IncludeTotals": "Yes - include Interface and WILL totals",
+  "PNEUMA_QUICKHACK.Settings.Choice.DetectionOnly": "No - report detection only",
+  "PNEUMA_QUICKHACK.Settings.Menu.Name": "Pneuma's Quickhack",
+  "PNEUMA_QUICKHACK.Settings.Menu.Button": "Configure Message Settings",
+  "PNEUMA_QUICKHACK.Settings.Menu.Hint": "Choose what is shown for player and NPC attackers and targets.",
+  "PNEUMA_QUICKHACK.Settings.Menu.Title": "Pneuma's Quickhack",
+  "PNEUMA_QUICKHACK.Settings.Menu.Introduction": "Each box controls one situation. Attacker settings control the complete result and identity. Target settings control the detection alert.",
+  "PNEUMA_QUICKHACK.Settings.Menu.Save": "Save Settings",
+  "PNEUMA_QUICKHACK.Settings.PlayerAttacker.Title": "Player Netrunner Attacks",
+  "PNEUMA_QUICKHACK.Settings.NpcAttacker.Title": "NPC Netrunner Attacks",
+  "PNEUMA_QUICKHACK.Settings.PlayerTarget.Title": "Player Character Is Targeted",
+  "PNEUMA_QUICKHACK.Settings.NpcTarget.Title": "NPC Is Targeted",
+  "PNEUMA_QUICKHACK.Settings.PlayerTarget.UndetectedNote": "A targeted player receives no detection alert or result when they do not detect the Netrunner.",
+  "PNEUMA_QUICKHACK.Settings.Question.CompleteResult": "Who sees the complete result?",
+  "PNEUMA_QUICKHACK.Settings.Question.PlayerIdentity": "Do other players learn the Netrunner's identity?",
+  "PNEUMA_QUICKHACK.Settings.Question.NpcIdentity": "Do players learn the NPC's identity?",
+  "PNEUMA_QUICKHACK.Settings.Question.DetectionAlert": "Who receives the detection alert?",
+  "PNEUMA_QUICKHACK.Settings.Question.IncludeTotals": "Does the alert include roll totals?",
+  "PNEUMA_QUICKHACK.Settings.Question.ShareNpcAwareness": "Should the selected audience see whether the NPC is aware?",
+  "PNEUMA_QUICKHACK.Settings.Choice.ShareNpcAwareness": "Yes - show whether the NPC is aware",
+  "PNEUMA_QUICKHACK.Settings.Choice.HideNpcAwareness": "No - keep awareness GM-only",
+  "PNEUMA_QUICKHACK.Settings.Hint.CheckedRevealsIdentity": "Checked: identify the Netrunner. Unchecked: use Unknown Netrunner.",
+  "PNEUMA_QUICKHACK.Settings.Hint.UncheckedAwarenessOnly": "Unchecked: report detection without showing Interface or WILL totals.",
+  "PNEUMA_QUICKHACK.ForceOut.Button": "Force Invader Out",
+  "PNEUMA_QUICKHACK.ForceOut.ContextMissing": "This alert no longer contains valid force-out details.",
+  "PNEUMA_QUICKHACK.ForceOut.NotAuthorized": "You do not have permission to act for the defending character.",
+  "PNEUMA_QUICKHACK.ForceOut.ActiveGmRequired": "An active GM is required to resolve the Netrunner's hidden Interface roll.",
+  "PNEUMA_QUICKHACK.Error.ConcentrationMissing": "The defending character does not have a readable Concentration skill.",
+  "PNEUMA_QUICKHACK.ForceOut.InterfaceMissing": "The invading character does not have a readable Netrunner Interface rank.",
+  "PNEUMA_QUICKHACK.ForceOut.InterfaceDialogTitle": "Rolling Interface - Target {target} is attempting to force you out",
+  "PNEUMA_QUICKHACK.ForceOut.ResultTitle": "Force Invader Out",
+  "PNEUMA_QUICKHACK.ForceOut.Success": "{defender} ejects {netrunner} from their Neuroport.",
+  "PNEUMA_QUICKHACK.ForceOut.Failure": "{defender} fails to force {netrunner} out of their Neuroport.",
+  "PNEUMA_QUICKHACK.ForceOut.DefenderTotal": "WILL + Concentration",
+  "PNEUMA_QUICKHACK.ForceOut.InterfaceTotal": "Interface"
+  ,"PNEUMA_QUICKHACK.Effect.ActiveGmRequired": "An active GM is required to apply Quickhack effects to the target."
+  ,"PNEUMA_QUICKHACK.Effect.HpUnreadable": "The target's HP could not be read."
+  ,"PNEUMA_QUICKHACK.Effect.Title": "{quickhack} Effect"
+  ,"PNEUMA_QUICKHACK.Effect.SonicShockName": "Quickhack: Sonic Shock (Damaged Ear)"
+  ,"PNEUMA_QUICKHACK.Effect.DamagedEarMissing": "CPR's native Damaged Ear Critical Injury could not be found."
+  ,"PNEUMA_QUICKHACK.Effect.sonic-shock": "The native Damaged Ear Critical Injury was added to {target}, without bonus damage. Remove it manually when Sonic Shock ends."
+  ,"PNEUMA_QUICKHACK.Effect.synapse-burnout": "{target} takes {damage} damage directly to HP. Armor is ignored and not ablated."
+  ,"PNEUMA_QUICKHACK.Effect.system-reset": "Native system statuses applied to {target}: {statuses}. Remove them manually when System Reset ends or the target awakens."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.short-circuit": "GM: choose three eligible pieces of {target}'s cyberware. They cease functioning for 60 seconds (20 rounds)."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.impair-movement": "Lower {target}'s MOVE by 1 for 60 seconds (20 rounds), then restore it manually. No actor data was changed."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.overheat": "{target} is on fire and should take 4 damage directly to HP at the end of each turn until extinguished. No status or ongoing damage was applied because Cyberpunk RED does not register a native On Fire status."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.cyberware-malfunction": "Netrunner: choose one eligible piece of {target}'s cyberware. It and its attached options cease functioning for 60 seconds (20 rounds)."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.lure": "At the start of {target}'s next turn, control their Move Action toward the phantom noise. Do not reveal this message to the target."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.puppet": "Netrunner: control {target}'s Action and Move Action during their next turn, using the target's STATs and Skills."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.slow": "The Slow penalty is {amount}. Lower {target}'s MOVE by that amount for 60 seconds (20 rounds), then restore it manually. No actor data was changed."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.shard-ejection": "Netrunner: choose one installed piece of {target}'s chipware. Uninstall it and place it in an adjacent square unless the slot is covered."
+  ,"PNEUMA_QUICKHACK.Effect.Guidance.system-reset": "Apply Unconscious and Prone to {target} for 60 seconds (20 rounds), with Unconscious ending early if they take damage. No status was applied because Cyberpunk RED does not register either status natively."
 }

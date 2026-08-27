@@ -1,0 +1,75 @@
+<form class="pneuma-quickhack-settings" autocomplete="off">
+  <p class="pneuma-settings-intro">{{localize "PNEUMA_QUICKHACK.Settings.Menu.Introduction"}}</p>
+
+  <div class="pneuma-settings-grid">
+    <section class="pneuma-settings-card">
+      <h2><i class="fas fa-user"></i> {{localize "PNEUMA_QUICKHACK.Settings.PlayerAttacker.Title"}}</h2>
+      <div class="pneuma-settings-field">
+        <label for="player-attacker-audience">{{localize "PNEUMA_QUICKHACK.Settings.Question.CompleteResult"}}</label>
+        <select id="player-attacker-audience" name="playerAttackerResultAudience">
+          {{selectOptions playerResultChoices selected=config.playerAttackerResultAudience localize=true}}
+        </select>
+      </div>
+      <fieldset class="pneuma-settings-choice">
+        <legend>{{localize "PNEUMA_QUICKHACK.Settings.Question.PlayerIdentity"}}</legend>
+        <label><input type="radio" name="playerAttackerRevealIdentity" value="true" {{#if config.playerAttackerRevealIdentity}}checked{{/if}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.RevealIdentity"}}</label>
+        <label><input type="radio" name="playerAttackerRevealIdentity" value="false" {{#unless config.playerAttackerRevealIdentity}}checked{{/unless}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.UseUnknownNetrunner"}}</label>
+      </fieldset>
+    </section>
+
+    <section class="pneuma-settings-card">
+      <h2><i class="fas fa-robot"></i> {{localize "PNEUMA_QUICKHACK.Settings.NpcAttacker.Title"}}</h2>
+      <div class="pneuma-settings-field">
+        <label for="npc-attacker-audience">{{localize "PNEUMA_QUICKHACK.Settings.Question.CompleteResult"}}</label>
+        <select id="npc-attacker-audience" name="npcAttackerResultAudience">
+          {{selectOptions npcResultChoices selected=config.npcAttackerResultAudience localize=true}}
+        </select>
+      </div>
+      <fieldset class="pneuma-settings-choice">
+        <legend>{{localize "PNEUMA_QUICKHACK.Settings.Question.NpcIdentity"}}</legend>
+        <label><input type="radio" name="npcAttackerRevealIdentity" value="true" {{#if config.npcAttackerRevealIdentity}}checked{{/if}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.RevealIdentity"}}</label>
+        <label><input type="radio" name="npcAttackerRevealIdentity" value="false" {{#unless config.npcAttackerRevealIdentity}}checked{{/unless}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.UseUnknownNetrunner"}}</label>
+      </fieldset>
+    </section>
+
+    <section class="pneuma-settings-card">
+      <h2><i class="fas fa-user-shield"></i> {{localize "PNEUMA_QUICKHACK.Settings.PlayerTarget.Title"}}</h2>
+      <p class="pneuma-settings-note">{{localize "PNEUMA_QUICKHACK.Settings.PlayerTarget.UndetectedNote"}}</p>
+      <div class="pneuma-settings-field">
+        <label for="player-target-audience">{{localize "PNEUMA_QUICKHACK.Settings.Question.DetectionAlert"}}</label>
+        <select id="player-target-audience" name="playerTargetAlertAudience">
+          {{selectOptions playerAlertChoices selected=config.playerTargetAlertAudience localize=true}}
+        </select>
+      </div>
+      <fieldset class="pneuma-settings-choice">
+        <legend>{{localize "PNEUMA_QUICKHACK.Settings.Question.IncludeTotals"}}</legend>
+        <label><input type="radio" name="playerTargetIncludeTotals" value="true" {{#if config.playerTargetIncludeTotals}}checked{{/if}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.IncludeTotals"}}</label>
+        <label><input type="radio" name="playerTargetIncludeTotals" value="false" {{#unless config.playerTargetIncludeTotals}}checked{{/unless}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.DetectionOnly"}}</label>
+      </fieldset>
+    </section>
+
+    <section class="pneuma-settings-card">
+      <h2><i class="fas fa-user-secret"></i> {{localize "PNEUMA_QUICKHACK.Settings.NpcTarget.Title"}}</h2>
+      <div class="pneuma-settings-field">
+        <label for="npc-target-audience">{{localize "PNEUMA_QUICKHACK.Settings.Question.DetectionAlert"}}</label>
+        <select id="npc-target-audience" name="npcTargetAlertAudience">
+          {{selectOptions npcAlertChoices selected=config.npcTargetAlertAudience localize=true}}
+        </select>
+      </div>
+      <fieldset class="pneuma-settings-choice">
+        <legend>{{localize "PNEUMA_QUICKHACK.Settings.Question.IncludeTotals"}}</legend>
+        <label><input type="radio" name="npcTargetIncludeTotals" value="true" {{#if config.npcTargetIncludeTotals}}checked{{/if}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.IncludeTotals"}}</label>
+        <label><input type="radio" name="npcTargetIncludeTotals" value="false" {{#unless config.npcTargetIncludeTotals}}checked{{/unless}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.DetectionOnly"}}</label>
+      </fieldset>
+      <fieldset class="pneuma-settings-choice pneuma-settings-choice-spaced">
+        <legend>{{localize "PNEUMA_QUICKHACK.Settings.Question.ShareNpcAwareness"}}</legend>
+        <label><input type="radio" name="npcTargetShareAwareness" value="true" {{#if config.npcTargetShareAwareness}}checked{{/if}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.ShareNpcAwareness"}}</label>
+        <label><input type="radio" name="npcTargetShareAwareness" value="false" {{#unless config.npcTargetShareAwareness}}checked{{/unless}}> {{localize "PNEUMA_QUICKHACK.Settings.Choice.HideNpcAwareness"}}</label>
+      </fieldset>
+    </section>
+  </div>
+
+  <footer class="pneuma-settings-footer">
+    <button type="submit"><i class="fas fa-save"></i> {{localize "PNEUMA_QUICKHACK.Settings.Menu.Save"}}</button>
+  </footer>
+</form>

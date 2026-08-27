@@ -4,7 +4,7 @@
 
 Provide Foundry Virtual Tabletop v12 automation for the Cyberpunk: Edgerunners Mission Kit quickhacking rules while leaving uncommon situations and table rulings under GM control.
 
-The initial module will replace the existing Jack-In macro, preserve all of its current behavior, and add character-sheet and chat-based workflows for Jacking In, performing Quickhacks, and attempting to expel a Netrunner.
+The initial module will replace the existing Jack-In macro, preserve all of its current behavior, and add character-sheet and chat-based workflows for Jacking In, performing Quickhacks, and attempting to force an invading Netrunner out.
 
 ## Design Principles
 
@@ -47,63 +47,78 @@ Do not validate:
 - Whether a previously ejected Netrunner is within the 60-minute lockout.
 - Whether the target is visible to the Netrunner. Attacker-specific visibility validation is deferred to the backlog.
 
-## Phase 2: GM-Only Settings
+## Phase 2: GM-Only Settings - Implemented
 
 Replace the configuration constants at the top of the macro with clearly named, GM-only module settings.
 
-### Jack-In Result Visibility
+Use one **Quickhack Message Settings** window divided into four scenario boxes. Each box asks only who sees the message and what those recipients learn.
 
-Controls who receives the complete Jack-In result:
+### Player Netrunner Attacks
 
-- GM Only
-- Everyone
-- Netrunner Owners and GM
+- Complete result recipients: Everyone, Netrunner Owners and GMs, or GMs Only.
+- Identity: reveal the Netrunner or use Unknown Netrunner.
 
-The setting description must explain that a public complete result identifies a player-owned Netrunner even if target-facing identity concealment is enabled.
+### NPC Netrunner Attacks
 
-### Detected Jack-In Notification
+- Complete result recipients: GMs Only or Everyone.
+- Identity: reveal the NPC or use Unknown Netrunner.
+- The underlying NPC Interface roll remains blind to GMs even when its result summary is public.
 
-Controls who sees the notification that a target detected a Jack-In attempt:
+### Player Character Is Targeted
 
-- Target Owners Only
-- Everyone
+- Detection alert recipients: Target Owners Only, Everyone, or GMs Only.
+- Alert detail: include Interface and WILL totals or report detection only.
 
-### Conceal Netrunner Identity from Target
+### NPC Is Targeted
 
-Controls whether the special target-facing notification identifies the source actor:
+- Detection alert recipients: GMs Only or Everyone.
+- Alert detail: include Interface and WILL totals or report detection only.
+- Awareness privacy: optionally keep whether the NPC detected the Netrunner GM-only. When hidden, the configured result audience receives a version without awareness status and GMs receive the complete result separately.
 
-- Enabled: use an anonymous identity such as "Unknown Netrunner."
-- Disabled: identify the source actor normally.
+Player targets never receive a result or detection alert when they fail to detect the Netrunner, even when the attacker's general result audience is Everyone.
 
-All settings must include plain-language descriptions of their behavior and interactions.
+Audience and identity remain independent. When a shared result is anonymous, keep the native player Interface roll card private to the Netrunner's owners and GMs so it cannot leak the source identity.
 
-## Phase 3: Equippable Quickhacking Items
+## Phase 3: Equippable Quickhacking Items - Implemented
 
 Do not use the Cyberpunk RED character sheet's Combat/Fight -> NET view. Most potential quickhack targets do not use that section, and the module's player actions should remain accessible from the normal Fight tab.
 
-Provide **Jack In to Person** as a normal equippable Cyberpunk RED weapon item:
+Provide **Quickhack** as a normal equippable Cyberpunk RED weapon item:
 
 - Create one flagged world Item for the GM when the module is first enabled.
 - Allow the GM to drag the item onto Netrunner character sheets.
 - Use the normal Owned -> Carried -> Equipped workflow.
 - Display the equipped item alongside weapons such as Unarmed on the Fight tab.
 - Replace the flagged item's attack control with the Jack-In workflow.
-- Hide meaningless weapon damage and firing-mode controls.
+- Replace its damage control with the Perform Quickhack workflow.
+- Present distinct **Jack In** and **Quickhack** controls on the normal Fight tab.
+- Hide meaningless firing-mode controls and weapon statistics.
 - Identify its special behavior with a module flag rather than its displayed name, allowing the item to be renamed safely.
 
 The actor who owns the activated item is the source Netrunner. The workflow uses the user's currently targeted token as the target. When an actor has multiple active tokens on the scene, the user must select the token performing the action.
 
-Use the same equippable-item pattern for **Perform Quickhack** when that workflow is implemented.
+The **Quickhack** control opens the Phase 5 Quickhack selection and resolution workflow.
+
+### Item Status
+
+- **Quickhack world Item creation:** Implemented. A GM load creates one canonical flagged Item in the Items directory when none exists.
+- **Existing Item preservation:** Implemented. Flagged world and actor Items retain user-edited names and descriptions; the module identifies them only through its hidden Item flag.
+- **Owned -> Carried -> Equipped workflow:** Implemented through the Cyberpunk RED weapon item type.
+- **Fight-tab Jack In control:** Implemented and connected to the Phase 1 Jack-In workflow.
+- **Fight-tab Quickhack control:** Implemented as a distinct action entry point.
+- **Quickhack selection and roll:** Implemented in Phase 5.
+- **Quickhack effects:** Scheduled for Phase 6.
+- **Name-independent behavior:** Implemented through the `pneuma-quickhack.action` Item flag.
 
 Foundry's Cyberpunk RED system does not appear to maintain or spend a numeric pool of Net Actions. The initial module will not add Net Action accounting.
 
 Jack Out is deferred because the module will not initially track connections, leaving it with no meaningful mechanical effect beyond a chat declaration.
 
-## Phase 4: Expel Netrunner Workflow
+## Phase 4: Force Invader Out Workflow - Implemented
 
-A character who knows they have been compromised must be able to attempt to expel the invading Netrunner without needing a NET section on their character sheet.
+A character who knows they have been compromised must be able to attempt to force the invading Netrunner out without needing a NET section on their character sheet.
 
-Resolve expulsion as:
+Resolve the attempt to force the invader out as:
 
 ```text
 Defender: WILL + Concentration + 1d10
@@ -113,9 +128,9 @@ Netrunner: Interface + 1d10
 
 The defender must beat the Netrunner's result. A tie favors the Netrunner.
 
-### Expulsion Trigger
+### Force Invader Out Trigger
 
-Provide an **Expel Netrunner** button in contextual, target-facing chat messages:
+Provide a **Force Invader Out** button in contextual, target-facing chat messages:
 
 - Include it when the target detects the initial Jack-In attempt.
 - Include it after every successful Quickhack that alerts the target.
@@ -129,13 +144,24 @@ The button must:
 - Be usable only by a GM or an Owner of the defending actor.
 - Remain reusable from the chat message for later attempts.
 - Use native system rolls where practical, including normal modifiers and critical dice.
-- Announce whether the Netrunner was successfully expelled.
+- Announce whether the Netrunner was successfully ejected.
 
-There will be no manual character-sheet fallback for expulsion because most potential defenders do not have a NET section.
+There will be no manual character-sheet fallback for forcing an invader out because most potential defenders do not have a NET section.
 
-The module will not track or enforce the 60-minute lockout following a successful expulsion.
+The module will not track or enforce the 60-minute lockout following a successful ejection.
 
-## Phase 5: Quickhack Selection and Resolution
+### Force Invader Out Status
+
+- **Detected Jack-In trigger:** Implemented in the target-facing detection alert.
+- **Defender authorization:** Implemented for GMs and Owner-level users only.
+- **Opposed roll:** Implemented with native Concentration and Interface roll dialogs and modifiers.
+- **Hidden Netrunner handling:** Implemented through active-GM resolution and private Interface output.
+- **Reusable attempts:** Implemented; the chat button remains available after each attempt.
+- **Successful Quickhack triggers:** Implemented for successful, alerting Quickhacks.
+- **Failed Quickhack and Lure exclusions:** Implemented.
+- **Lockout tracking:** Intentionally not implemented.
+
+## Phase 5: Quickhack Selection and Resolution - Implemented
 
 The first quickhack mode is **Allow Any Quickhack**. It makes every CEMK Quickhack available without requiring inventory items.
 
@@ -149,9 +175,21 @@ Initial workflow:
 6. The module rolls Interface against the Quickhack's DV.
 7. The module posts the result using the configured visibility rules.
 8. On success, the module applies the supported automation and alerts the target unless the selected Quickhack is Lure.
-9. Any target-facing alert includes **Expel Netrunner**.
+9. Any target-facing alert includes **Force Invader Out**.
 
 Because connections are not tracked, the module will not technically verify that the source is already jacked into the target. Players and GMs are responsible for enforcing that prerequisite.
+
+### Quickhack Workflow Status
+
+- **Target, authorization, self-target, and range validation:** Implemented.
+- **Quickhack picker grouped by difficulty:** Implemented for all eleven CEMK Quickhacks.
+- **Native Interface workflow:** Implemented for both player and NPC Netrunners, including the system modifier and LUCK dialog. NPC roll cards remain GM-only.
+- **Interface versus DV resolution:** Implemented; the Interface total must beat the DV.
+- **Configured result audience, identity, and NPC-awareness privacy:** Implemented.
+- **Successful target alerts:** Implemented with a Force Invader Out button.
+- **Failed Quickhacks:** Implemented without a target alert or Force Invader Out button.
+- **Successful Lure:** Implemented without a target alert or Force Invader Out button.
+- **Mechanical Quickhack effects:** Scheduled for Phase 6.
 
 ### Quickhack List
 
@@ -178,7 +216,7 @@ Because connections are not tracked, the module will not technically verify that
 - Shard Ejection
 - System Reset
 
-## Phase 6: Quickhack Effect Automation
+## Phase 6: Quickhack Effect Automation - Implemented
 
 Implement each Quickhack according to the amount of safe, useful automation it supports.
 
@@ -203,6 +241,24 @@ Implement each Quickhack according to the amount of safe, useful automation it s
 - Puppet
 
 Before implementing lasting effects, determine how the Cyberpunk RED system handles MOVE modifiers, Critical Injuries, fire, ongoing damage, Prone, Unconscious, and timed Active Effects. Prefer integration with existing system behavior over duplicate module state.
+
+### Effect Status
+
+- **Impair Movement:** Guided handling only. The module does not change or track MOVE.
+- **Sonic Shock:** Adds CPR's native Damaged Ear Critical Injury without bonus damage. Players remove it manually when the effect ends.
+- **Overheat:** Guided handling only. Cyberpunk RED registers no native On Fire status, so this module does not create a substitute status or automate ongoing fire damage.
+- **Slow:** Rolls the 1d6 penalty and reports it as guidance. The module does not change or track MOVE.
+- **Synapse Burnout:** Automated with 3d6 damage directly to HP, bypassing armor without ablation.
+- **System Reset:** Applies only Unconscious and/or Prone statuses registered natively by the active system, without timers or wake-up tracking. Players remove them manually. If neither exists, it provides guided handling.
+- **Short Circuit:** Guided GM handling identifies the three-component choice and duration because the system has no universal safe cyberware-disable API.
+- **Cyberware Malfunction:** Guided Netrunner handling identifies the component choice, attached-option consequence, and duration.
+- **Shard Ejection:** Guided Netrunner handling identifies the chipware choice and slot-cover exception.
+- **Lure:** Guided handling is whispered only to the Netrunner's owners and GMs and does not alert the target.
+- **Puppet:** Guided handling records control of the target's next Action and Move Action using the target's STATs and Skills.
+
+Target mutations requested by players are resolved by the primary active GM so NPC ownership and hidden data remain protected.
+
+The module does not maintain effect timers, round counters, scheduled cleanup, or automatic restoration. Temporary changes are removed manually by the table.
 
 ## Explicitly Out of Initial Scope
 

@@ -1,35 +1,17 @@
-import { JACK_IN_ACTION, MODULE_ID } from "./constants.js";
+import { MODULE_ID, QUICKHACK_ACTION } from "./constants.js";
 
-const ITEM_SETTING = "jackInWorldItemId";
-
-export function isJackInItem(item) {
-  return item?.getFlag(MODULE_ID, "action") === JACK_IN_ACTION;
+export function isQuickhackItem(item) {
+  return item?.getFlag(MODULE_ID, "action") === QUICKHACK_ACTION;
 }
 
-export function registerJackInItemSettings() {
-  game.settings.register(MODULE_ID, ITEM_SETTING, {
-    scope: "world",
-    config: false,
-    type: String,
-    default: ""
-  });
-}
-
-export async function ensureJackInWorldItem() {
+export async function ensureQuickhackItems() {
   if (!game.user.isGM) return null;
 
-  const storedId = game.settings.get(MODULE_ID, ITEM_SETTING);
-  const storedItem = storedId ? game.items.get(storedId) : null;
-  if (isJackInItem(storedItem)) return storedItem;
-
-  const existingItem = game.items.find((item) => isJackInItem(item));
-  if (existingItem) {
-    await game.settings.set(MODULE_ID, ITEM_SETTING, existingItem.id);
-    return existingItem;
-  }
+  const existingItem = game.items.find((item) => isQuickhackItem(item));
+  if (existingItem) return existingItem;
 
   const item = await Item.create({
-    name: game.i18n.localize("PNEUMA_QUICKHACK.Item.JackInName"),
+    name: game.i18n.localize("PNEUMA_QUICKHACK.Item.Name"),
     type: "weapon",
     img: "icons/svg/lightning.svg",
     system: {
@@ -46,10 +28,9 @@ export async function ensureJackInWorldItem() {
       damage: "0",
       unarmedAutomaticCalculation: false
     },
-    flags: { [MODULE_ID]: { action: JACK_IN_ACTION } }
+    flags: { [MODULE_ID]: { action: QUICKHACK_ACTION } }
   });
 
-  await game.settings.set(MODULE_ID, ITEM_SETTING, item.id);
   ui.notifications.info(game.i18n.localize("PNEUMA_QUICKHACK.Item.Created"));
   return item;
 }
