@@ -2,7 +2,6 @@ import { MODULE_ID } from "./constants.js";
 import {
   AUDIENCE,
   DEFAULT_ROUTING_CONFIG,
-  mapRoutingToRuntime,
   normalizeRoutingConfig
 } from "./routing-config.js";
 
@@ -15,47 +14,48 @@ export class QuickhackMessageSettings extends FormApplication {
       id: "pneuma-quickhack-message-settings",
       title: "PNEUMA_QUICKHACK.Settings.Menu.Title",
       template: `modules/${MODULE_ID}/templates/message-settings.hbs`,
-      width: 760,
+      width: 1080,
       height: "auto",
       closeOnSubmit: true
     });
   }
 
   async getData() {
+    const config = getRoutingConfig();
     return {
-      config: getRoutingConfig(),
-      playerResultChoices: {
-        [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.Everyone",
-        [AUDIENCE.SOURCE_OWNERS]: "PNEUMA_QUICKHACK.Settings.Choice.NetrunnerOwnersAndGm",
-        [AUDIENCE.GM]: "PNEUMA_QUICKHACK.Settings.Choice.GmOnly"
+      config: {
+        ...config,
+        npcToPlayerJackInShowTotals: String(config.npcToPlayerJackInShowTotals),
+        npcToPlayerJackInRevealAttacker: String(config.npcToPlayerJackInRevealAttacker),
+        npcToPlayerQuickhackRevealAttacker: String(config.npcToPlayerQuickhackRevealAttacker)
       },
-      npcResultChoices: {
-        [AUDIENCE.GM]: "PNEUMA_QUICKHACK.Settings.Choice.GmOnly",
-        [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.Everyone"
-      },
-      playerAlertChoices: {
+      detectedPlayerChoices: {
         [AUDIENCE.TARGET_OWNERS]: "PNEUMA_QUICKHACK.Settings.Choice.TargetOwnersOnly",
-        [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.Everyone",
-        [AUDIENCE.GM]: "PNEUMA_QUICKHACK.Settings.Choice.GmOnly"
-      },
-      npcAlertChoices: {
-        [AUDIENCE.GM]: "PNEUMA_QUICKHACK.Settings.Choice.GmOnly",
         [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.Everyone"
+      },
+      totalsChoices: {
+        true: "PNEUMA_QUICKHACK.Settings.Choice.ShowTotals",
+        false: "PNEUMA_QUICKHACK.Settings.Choice.HideTotals"
+      },
+      identityChoices: {
+        true: "PNEUMA_QUICKHACK.Settings.Choice.ShowNpcName",
+        false: "PNEUMA_QUICKHACK.Settings.Choice.HideNpcName"
+      },
+      awarenessChoices: {
+        [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.ShowNpcAwareness",
+        [AUDIENCE.SOURCE_OWNERS]: "PNEUMA_QUICKHACK.Settings.Choice.AttackerOnlyAwareness"
       }
     };
   }
 
   async _updateObject(_event, formData) {
     await game.settings.set(MODULE_ID, ROUTING_SETTING, normalizeRoutingConfig({
-      playerAttackerResultAudience: formData.playerAttackerResultAudience,
-      playerAttackerRevealIdentity: formData.playerAttackerRevealIdentity === "true",
-      npcAttackerResultAudience: formData.npcAttackerResultAudience,
-      npcAttackerRevealIdentity: formData.npcAttackerRevealIdentity === "true",
-      playerTargetAlertAudience: formData.playerTargetAlertAudience,
-      playerTargetIncludeTotals: formData.playerTargetIncludeTotals === "true",
-      npcTargetAlertAudience: formData.npcTargetAlertAudience,
-      npcTargetIncludeTotals: formData.npcTargetIncludeTotals === "true",
-      npcTargetShareAwareness: formData.npcTargetShareAwareness === "true"
+      npcToPlayerJackInAudience: formData.npcToPlayerJackInAudience,
+      npcToPlayerJackInShowTotals: formData.npcToPlayerJackInShowTotals === "true",
+      npcToPlayerJackInRevealAttacker: formData.npcToPlayerJackInRevealAttacker === "true",
+      npcToPlayerQuickhackAudience: formData.npcToPlayerQuickhackAudience,
+      npcToPlayerQuickhackRevealAttacker: formData.npcToPlayerQuickhackRevealAttacker === "true",
+      playerToNpcJackInAudience: formData.playerToNpcJackInAudience
     }));
   }
 }
@@ -89,10 +89,6 @@ export function registerModuleSettings() {
 
 export function getRoutingConfig() {
   return normalizeRoutingConfig(game.settings.get(MODULE_ID, ROUTING_SETTING));
-}
-
-export function getJackInSettings(context) {
-  return mapRoutingToRuntime(getRoutingConfig(), context);
 }
 
 export function requireOwnedQuickhacks() {

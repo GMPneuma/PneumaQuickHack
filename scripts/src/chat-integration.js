@@ -6,16 +6,6 @@ import { rollQuickhackDamage } from "./quickhack-damage.js";
 export function registerChatIntegration() {
   Hooks.on("renderChatMessage", async (message, html) => {
     const root = html[0] ?? html;
-    if (message.getFlag(MODULE_ID, "gmOnly") === true) {
-      root?.classList?.add("pneuma-quickhack-gm-only");
-      const content = root?.querySelector?.(".message-content");
-      if (content && !content.querySelector(".pneuma-quickhack-gm-banner")) {
-        const banner = document.createElement("div");
-        banner.className = "pneuma-quickhack-gm-banner";
-        banner.innerHTML = `<i class="fas fa-user-shield"></i> ${game.i18n.localize("PNEUMA_QUICKHACK.Chat.GmOnly")}`;
-        content.prepend(banner);
-      }
-    }
     const damageButton = root?.querySelector?.(".pneuma-quickhack-roll-damage");
     if (damageButton) {
       const sourceActorUuid = message.getFlag(MODULE_ID, "sourceActorUuid");

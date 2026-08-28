@@ -1,3 +1,5 @@
+import { MODULE_ID } from "./constants.js";
+
 export async function rollCriticalD10() {
   const initial = (await new Roll("1d10").evaluate()).total;
   if (initial === 10) {
@@ -42,11 +44,12 @@ export async function rollForceOutConcentration({ defenderActor, messageAudience
   return { total: Number(cprRoll.resultTotal), messageId: message.id };
 }
 
-export async function rollForceOutResistance({
+export async function rollPlayerForceOutResistance({
   netrunnerActor,
   netrunnerRole,
   defenderActor,
-  gmRecipients
+  gmRecipients,
+  requestId
 }) {
   let cprRoll = netrunnerRole.createRoll("roleAbility", netrunnerActor, {
     rollSubType: "mainRoleAbility"
@@ -64,14 +67,42 @@ export async function rollForceOutResistance({
   cprRoll = await netrunnerRole.confirmRoll(cprRoll);
   await cprRoll.roll();
   const content = await renderTemplate(cprRoll.rollCard, cprRoll);
-  await ChatMessage.create({
+  const message = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: netrunnerActor }),
     whisper: gmRecipients,
     blind: true,
     content,
-    flags: { [MODULE_ID]: { type: "forceOutResistanceRoll", gmOnly: true } }
+    flags: { [MODULE_ID]: {
+      type: "forceOutResistanceRoll",
+      netrunnerActorUuid: netrunnerActor.uuid,
+      requestId,
+      resultTotal: Number(cprRoll.resultTotal),
+      gmOnly: true
+    } }
   });
-  return Number(cprRoll.resultTotal);
+  return { total: Number(cprRoll.resultTotal), messageId: message.id };
+}
+
+export async function rollNpcForceOutResistance(interfaceRank) {
+  const die = await rollCriticalD10();
+  return Number(interfaceRank) + die.initial + die.adjustment;
+}
+
+async function rollWithoutDiceSoNice(cprRoll) {
+  cprRoll._roll = await new Roll(cprRoll.formula).evaluate();
+  cprRoll.initialRoll = cprRoll._roll.total;
+  cprRoll.resultTotal = cprRoll.initialRoll + cprRoll.totalMods();
+
+  const firstTerm = cprRoll._roll.terms[0];
+  cprRoll.faces = firstTerm.formula !== String(firstTerm.total)
+    ? firstTerm.results.map((result) => result.result)
+    : [];
+
+  if (cprRoll.wasCritical() && cprRoll.calculateCritical) {
+    cprRoll._critRoll = await new Roll(cprRoll.formula).evaluate();
+    cprRoll.criticalRoll = cprRoll._critRoll.total;
+  }
+  cprRoll._computeResult();
 }
 
 export async function rollPlayerInterface({
@@ -81,7 +112,8 @@ export async function rollPlayerInterface({
   messageAudience,
   rollTitle,
   rollHeader = rollTitle,
-  returnMessage = false
+  returnMessage = false,
+  suppressDiceSoNice = false
 }) {
   let cprRoll = netrunnerRole.createRoll("roleAbility", sourceActor, { rollSubType: "mainRoleAbility" });
   if (rollTitle) cprRoll.rollTitle = rollTitle;
@@ -91,8 +123,13 @@ export async function rollPlayerInterface({
   );
   if (!keepRoll) return null;
   cprRoll = await netrunnerRole.confirmRoll(cprRoll);
-  await cprRoll.roll();
-  const content = await renderTemplate(cprRoll.rollCard, cprRoll);
+  if (suppressDiceSoNice) await rollWithoutDiceSoNice(cprRoll);
+  else await cprRoll.roll();
+  const renderedContent = await renderTemplate(cprRoll.rollCard, cprRoll);
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderedContent;
+  wrapper.querySelector(".rollcard-top .chat-rollTitle-stat .text-small")?.remove();
+  const content = wrapper.innerHTML;
   const message = await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken.document }),
     whisper: messageAudience.visibility === "public" ? [] : messageAudience.recipients,
@@ -107,48 +144,12 @@ export async function rollPlayerInterface({
   return returnMessage ? { total, message } : total;
 }
 
-export async function rollNpcInterface({ sourceActor, sourceToken, targetToken, interfaceRank }) {
-  const die = await rollCriticalD10();
-  const roll = await new Roll("@initial + @rank + @adjustment", {
-    initial: die.initial, rank: interfaceRank, adjustment: die.adjustment
-  }).evaluate();
-  const flavor = [
-    `<strong>${game.i18n.localize("PNEUMA_QUICKHACK.Roll.InterfaceCheck")}</strong>`,
-    game.i18n.format("PNEUMA_QUICKHACK.Roll.SourceTargetsTarget", {
-      source: sourceToken.name, target: targetToken.name
-    }),
-    die.label
-  ].filter(Boolean).join("<br>");
-  await roll.toMessage(
-    {
-      speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken.document }),
-      flavor,
-      flags: { [MODULE_ID]: { type: "npcInterfaceRoll", gmOnly: true } }
-    },
-    { rollMode: "blindroll" }
-  );
-  return roll.total;
-}
-
-export async function rollTargetWill({ targetActor, targetToken, gmRecipients }) {
+export async function rollTargetWill({ targetActor }) {
   const willValue = Number(foundry.utils.getProperty(targetActor, "system.stats.will.value"));
   if (!Number.isFinite(willValue)) throw new Error("PNEUMA_QUICKHACK.Error.TargetWillUnreadable");
   const die = await rollCriticalD10();
   const roll = await new Roll("@initial + @will + @adjustment", {
     initial: die.initial, will: willValue, adjustment: die.adjustment
   }).evaluate();
-  const flavor = [
-    `<strong>${game.i18n.localize("PNEUMA_QUICKHACK.Roll.AwarenessCheck")}</strong>`,
-    game.i18n.format("PNEUMA_QUICKHACK.Roll.TargetRollsWill", { target: targetToken.name }),
-    die.label
-  ].filter(Boolean).join("<br>");
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor: targetActor, token: targetToken.document }),
-    whisper: gmRecipients,
-    blind: true,
-    content: `<div>${flavor}<br><strong>${game.i18n.localize("PNEUMA_QUICKHACK.Roll.Total")}:</strong> ${roll.total}</div>`,
-    flags: { [MODULE_ID]: { type: "targetWillRoll", gmOnly: true } }
-  });
   return roll.total;
 }
-import { MODULE_ID } from "./constants.js";

@@ -30,11 +30,11 @@ export async function attachQuickhackDamageAction(message, {
   if (!message || !quickhack?.damageFormula) return message;
   const wrapper = document.createElement("div");
   wrapper.innerHTML = message.content;
-  const subtitle = wrapper.querySelector(".rollcard-top .chat-rollTitle-stat .text-small");
-  if (!subtitle) throw new Error("PNEUMA_QUICKHACK.Damage.Invalid");
+  const header = wrapper.querySelector(".rollcard-top .chat-rollTitle-stat");
+  if (!header) throw new Error("PNEUMA_QUICKHACK.Damage.Invalid");
   const label = game.i18n.localize("PNEUMA_QUICKHACK.Damage.Roll");
-  subtitle.classList.add("pneuma-quickhack-attack-subtitle");
-  subtitle.insertAdjacentHTML("beforeend", `<a class="pneuma-quickhack-roll-damage clickable"
+  header.classList.add("pneuma-quickhack-attack-header");
+  header.insertAdjacentHTML("beforeend", `<a class="pneuma-quickhack-roll-damage clickable"
     data-tooltip="${label}"
     aria-label="${label}"><i class="fas fa-tint red-fg"></i></a>`);
   await message.update({

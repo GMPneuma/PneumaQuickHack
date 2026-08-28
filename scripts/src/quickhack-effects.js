@@ -1,5 +1,4 @@
 import { MODULE_ID, SOCKET_NAME } from "./constants.js";
-import { getActorOwners } from "./foundry-utils.js";
 import { getQuickhack } from "./quickhack-catalog.js";
 
 function activeGms() {
@@ -39,24 +38,16 @@ async function applySonicShock(actor) {
   return actor.createEmbeddedDocuments("Item", [itemData]);
 }
 
-async function postEffectMessage(actor, quickhack, detailKey, detailData = {}, recipientOverride = null) {
-  const recipients = recipientOverride ?? [...new Set([
-    ...ChatMessage.getWhisperRecipients("GM").map((user) => user.id),
-    ...getActorOwners(actor)
-  ])];
-  const gmOnly = recipients.length > 0 && recipients.every((id) => game.users.get(id)?.isGM);
-  await ChatMessage.create({
-    speaker: ChatMessage.getSpeaker({ actor }),
-    whisper: recipients,
-    blind: gmOnly,
-    content: `<h3>${game.i18n.format("PNEUMA_QUICKHACK.Effect.Title", { quickhack: quickhack.name })}</h3>
-      <p>${game.i18n.format(detailKey, { target: actor.name, ...detailData })}</p>`,
-    flags: { [MODULE_ID]: {
-      type: "quickhackEffect",
-      quickhackId: quickhack.id,
-      effectTargetActorUuid: actor.uuid,
-      gmOnly
-    } }
+async function appendEffectSummary(message, detailKey, detailData) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = message.content;
+  const slot = wrapper.querySelector(".pneuma-quickhack-effect-slot");
+  if (!slot) return;
+  slot.innerHTML = `<strong>${game.i18n.localize("PNEUMA_QUICKHACK.Effect.Label")}:</strong>
+    ${game.i18n.format(detailKey, detailData)}`;
+  await message.update({
+    content: wrapper.innerHTML,
+    [`flags.${MODULE_ID}.effectResolved`]: true
   });
 }
 
@@ -89,21 +80,18 @@ async function resolveEffect({
     || result.quickhackId !== quickhackId
   ) return;
 
-  let detailKey = `PNEUMA_QUICKHACK.Effect.${quickhack.id}`;
-  const detailData = {};
+  let detailKey = `PNEUMA_QUICKHACK.Effect.Summary.${quickhack.id}`;
+  const detailData = { target: targetActor.name };
   switch (quickhack.id) {
     case "impair-movement":
-      detailKey = "PNEUMA_QUICKHACK.Effect.Guidance.impair-movement";
       break;
     case "sonic-shock":
       await applySonicShock(targetActor);
       break;
     case "overheat":
-      detailKey = "PNEUMA_QUICKHACK.Effect.Guidance.overheat";
       break;
     case "slow": {
       const amount = (await new Roll("1d6").evaluate()).total;
-      detailKey = "PNEUMA_QUICKHACK.Effect.Guidance.slow";
       detailData.amount = amount;
       break;
     }
@@ -118,41 +106,17 @@ async function resolveEffect({
         });
         detailData.statuses = statuses.join(", ");
       } else {
-        detailKey = "PNEUMA_QUICKHACK.Effect.Guidance.system-reset";
+        detailKey = "PNEUMA_QUICKHACK.Effect.Summary.system-reset-manual";
       }
       break;
     }
     default:
-      detailKey = `PNEUMA_QUICKHACK.Effect.Guidance.${quickhack.id}`;
   }
-  const gmRecipients = ChatMessage.getWhisperRecipients("GM").map((user) => user.id);
-  const recipients = quickhack.id === "short-circuit"
-    ? gmRecipients
-    : [...new Set([
-        ...gmRecipients,
-        ...getActorOwners(sourceActor),
-        ...getActorOwners(targetActor)
-      ])];
-  await postEffectMessage(targetActor, quickhack, detailKey, detailData, recipients);
+  await appendEffectSummary(resultMessage, detailKey, detailData);
 }
 
 export async function applyQuickhackEffect({ sourceActor, targetActor, quickhack, resultMessage }) {
-  if (!quickhack || quickhack.id === "synapse-burnout" || quickhack.id === "lure") {
-    if (quickhack?.id === "lure") {
-      const recipients = [...new Set([
-        ...ChatMessage.getWhisperRecipients("GM").map((user) => user.id),
-        ...getActorOwners(sourceActor)
-      ])];
-      await postEffectMessage(
-        targetActor,
-        quickhack,
-        "PNEUMA_QUICKHACK.Effect.Guidance.lure",
-        {},
-        recipients
-      );
-    }
-    return;
-  }
+  if (!quickhack) return;
   const payload = {
     type: "applyQuickhackEffect",
     sourceActorUuid: sourceActor.uuid,

@@ -6,9 +6,10 @@ import { postQuickhackResults } from "./messages.js";
 import { QUICKHACKS, getOwnedQuickhacks, getQuickhack } from "./quickhack-catalog.js";
 import { applyQuickhackEffect } from "./quickhack-effects.js";
 import { attachQuickhackDamageAction } from "./quickhack-damage.js";
-import { isQuickhackSuccessful, resolveInterfaceRollAudience, resolveResultAudience } from "./rules.js";
+import { isQuickhackSuccessful, isQuickhackTargetAlerted } from "./rules.js";
+import { AUDIENCE, resolveAttackRollAudience, resolveQuickhackRouting } from "./routing-config.js";
 import { rollPlayerInterface } from "./rolls.js";
-import { getJackInSettings, requireOwnedQuickhacks } from "./settings.js";
+import { getRoutingConfig, requireOwnedQuickhacks } from "./settings.js";
 
 const notify = (level, key, data = {}) => ui.notifications[level](game.i18n.format(key, data));
 
@@ -109,23 +110,25 @@ export async function executeQuickhack(sourceActor, options = {}) {
   }
   const sourceIsPlayer = sourceActor.hasPlayerOwner;
   const targetIsPlayer = targetActor.hasPlayerOwner;
-  const config = { ...getJackInSettings({ sourceIsPlayer, targetIsPlayer }), ...options };
+  const routingConfig = options.routingConfig ?? getRoutingConfig();
   const gmRecipients = ChatMessage.getWhisperRecipients("GM").map((user) => user.id);
-  const sourceOwnerRecipients = getActorOwners(sourceActor);
-  const resultAudience = resolveResultAudience({ sourceIsPlayer, configuredVisibility: config.resultVisibility, gmRecipients, sourceOwnerRecipients });
-  const rollAudience = sourceIsPlayer
-    ? resolveInterfaceRollAudience({ resultAudience, concealIdentity: config.hideSourceInTargetResult, gmRecipients, sourceOwnerRecipients })
-    : { visibility: "gm", recipients: gmRecipients };
+  const attackAudience = resolveAttackRollAudience({ sourceIsPlayer });
+  const rollAudience = {
+    visibility: attackAudience,
+    recipients: attackAudience === AUDIENCE.GM ? gmRecipients : []
+  };
   const interfaceRoll = await rollPlayerInterface({
     sourceActor,
     sourceToken,
     netrunnerRole,
     messageAudience: rollAudience,
-    rollTitle: game.i18n.format("PNEUMA_QUICKHACK.Roll.AttemptingQuickhack", {
+    rollTitle: `${quickhack.name} · DV${quickhack.dv}`,
+    rollHeader: game.i18n.format("PNEUMA_QUICKHACK.Roll.AttemptingQuickhack", {
       quickhack: quickhack.name,
       target: targetToken.name
     }),
-    returnMessage: true
+    returnMessage: true,
+    suppressDiceSoNice: !sourceIsPlayer
   });
   if (interfaceRoll === null) return null;
   const interfaceTotal = interfaceRoll.total;
@@ -136,15 +139,16 @@ export async function executeQuickhack(sourceActor, options = {}) {
       sourceActor, sourceToken, targetActor, targetToken, quickhack
     });
   }
-  const targetAlerted = success && !quickhack.silentOnSuccess;
+  const targetAlerted = isQuickhackTargetAlerted({
+    success,
+    silentOnSuccess: quickhack.silentOnSuccess,
+    targetIsPlayer
+  });
+  const routing = resolveQuickhackRouting(routingConfig, { sourceIsPlayer, targetIsPlayer });
   const resultMessage = await postQuickhackResults({
     sourceActor, sourceToken, targetActor, targetToken, quickhack, interfaceTotal,
-    success, targetAlerted, targetIsPlayer, resultAudience,
-    targetOwnerRecipients: getActorOwners(targetActor), gmRecipients,
-    targetAlertAudience: config.targetAlertAudience,
-    includeTargetAlertTotals: config.includeTargetAlertTotals,
-    shareTargetAwareness: config.shareTargetAwareness,
-    hideSourceInTargetResult: config.hideSourceInTargetResult
+    success, targetAlerted, targetOwnerRecipients: getActorOwners(targetActor),
+    gmRecipients, routing
   });
   if (success) {
     try {

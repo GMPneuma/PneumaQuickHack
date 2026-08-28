@@ -4,22 +4,25 @@ import test from "node:test";
 import {
   isNetrunnerEjected,
   isQuickhackSuccessful,
+  isQuickhackTargetAlerted,
   isTargetAware,
-  isWithinJackInRange,
-  resolveInterfaceRollAudience,
-  resolveResultAudience,
-  shouldConcealPublicIdentity
+  isWithinJackInRange
 } from "../scripts/src/rules.js";
 import {
   AUDIENCE,
   DEFAULT_ROUTING_CONFIG,
-  mapRoutingToRuntime,
-  resolveTargetAlertAudience
+  SCENARIO,
+  normalizeRoutingConfig,
+  resolveAttackRollAudience,
+  resolveJackInRouting,
+  resolveQuickhackRouting,
+  scenarioFor
 } from "../scripts/src/routing-config.js";
 import { QUICKHACKS, getOwnedQuickhacks, getQuickhack } from "../scripts/src/quickhack-catalog.js";
 import { isQuickhackDamageContextValid } from "../scripts/src/quickhack-damage.js";
 import { isQuickhackHotbarDrop } from "../scripts/src/hotbar-rules.js";
-import { missingTargetNoticeRecipients } from "../scripts/src/messages.js";
+import { resolveMessageDelivery } from "../scripts/src/messages.js";
+import { forceOutInterfaceMode } from "../scripts/src/force-out.js";
 
 test("defender ejects the Netrunner only by beating Interface", () => {
   assert.equal(isNetrunnerEjected(15, 14), true);
@@ -27,10 +30,21 @@ test("defender ejects the Netrunner only by beating Interface", () => {
   assert.equal(isNetrunnerEjected(13, 14), false);
 });
 
+test("Force Netrunner Out prompts PC attackers and auto-rolls NPC attackers", () => {
+  assert.equal(forceOutInterfaceMode(true), "playerPrompt");
+  assert.equal(forceOutInterfaceMode(false), "npcAutomatic");
+});
+
 test("Quickhack Interface total must beat its DV", () => {
   assert.equal(isQuickhackSuccessful(9, 8), true);
   assert.equal(isQuickhackSuccessful(8, 8), false);
   assert.equal(isQuickhackSuccessful(7, 8), false);
+});
+
+test("a player target always notices a Quickhack attempt", () => {
+  assert.equal(isQuickhackTargetAlerted({ success: false, silentOnSuccess: false, targetIsPlayer: true }), true);
+  assert.equal(isQuickhackTargetAlerted({ success: true, silentOnSuccess: true, targetIsPlayer: true }), true);
+  assert.equal(isQuickhackTargetAlerted({ success: true, silentOnSuccess: true, targetIsPlayer: false }), false);
 });
 
 test("catalog contains all eleven CEMK Quickhacks and keeps Lure silent", () => {
@@ -66,18 +80,6 @@ test("hotbar integration recognizes only actor-bound Quickhack actions", () => {
   assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "quickhack", actorUuid: "Actor.source" }), true);
   assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "attack", actorUuid: "Actor.source" }), false);
   assert.equal(isQuickhackHotbarDrop({ pneumaQuickhackAction: "jack-in" }), false);
-});
-
-test("Quickhack target notices are sent only to owners missing the complete result", () => {
-  assert.deepEqual(missingTargetNoticeRecipients({ whisper: [] }, ["target", "gm"]), []);
-  assert.deepEqual(
-    missingTargetNoticeRecipients({ whisper: ["source", "gm"] }, ["target", "gm"]),
-    ["target"]
-  );
-  assert.deepEqual(
-    missingTargetNoticeRecipients({ whisper: ["source", "target", "gm"] }, ["target", "gm"]),
-    []
-  );
 });
 
 test("owned Quickhack mode recognizes flagged inventory Items regardless of name", () => {
@@ -120,126 +122,138 @@ test("range includes the twenty-fifth square", () => {
   assert.equal(isWithinJackInRange(Number.NaN), false);
 });
 
-test("NPC results can be shared publicly", () => {
-  assert.deepEqual(resolveResultAudience({
+test("the four attacker-to-target scenarios are classified explicitly", () => {
+  assert.equal(scenarioFor({ sourceIsPlayer: false, targetIsPlayer: false }), SCENARIO.NPC_TO_NPC);
+  assert.equal(scenarioFor({ sourceIsPlayer: false, targetIsPlayer: true }), SCENARIO.NPC_TO_PC);
+  assert.equal(scenarioFor({ sourceIsPlayer: true, targetIsPlayer: false }), SCENARIO.PC_TO_NPC);
+  assert.equal(scenarioFor({ sourceIsPlayer: true, targetIsPlayer: true }), SCENARIO.PC_TO_PC);
+});
+
+test("NPC attack rolls are GM-blind and player attack rolls are public", () => {
+  assert.equal(resolveAttackRollAudience({ sourceIsPlayer: false }), AUDIENCE.GM);
+  assert.equal(resolveAttackRollAudience({ sourceIsPlayer: true }), AUDIENCE.PUBLIC);
+});
+
+test("NPC-to-NPC Jack-In and Quickhack results are always GM-only", () => {
+  assert.equal(resolveJackInRouting(DEFAULT_ROUTING_CONFIG, {
     sourceIsPlayer: false,
-    configuredVisibility: 1,
-    gmRecipients: ["gm"],
-    sourceOwnerRecipients: []
-  }), { visibility: "public", recipients: [] });
-});
-
-test("public player results have no whisper recipients", () => {
-  assert.deepEqual(resolveResultAudience({
-    sourceIsPlayer: true,
-    configuredVisibility: 1,
-    gmRecipients: ["gm"],
-    sourceOwnerRecipients: ["player"]
-  }), { visibility: "public", recipients: [] });
-});
-
-test("owner visibility includes owners and GMs without duplicates", () => {
-  assert.deepEqual(resolveResultAudience({
-    sourceIsPlayer: true,
-    configuredVisibility: 2,
-    gmRecipients: ["gm"],
-    sourceOwnerRecipients: ["player", "gm"]
-  }), { visibility: "whisper", recipients: ["gm", "player"] });
-});
-
-test("default player-attacker and player-target routing is understandable", () => {
-  assert.deepEqual(mapRoutingToRuntime(DEFAULT_ROUTING_CONFIG, {
-    sourceIsPlayer: true,
-    targetIsPlayer: true
-  }), {
-    resultVisibility: 1,
-    hideSourceInTargetResult: false,
-    targetAlertAudience: AUDIENCE.TARGET_OWNERS,
-    includeTargetAlertTotals: true,
-    shareTargetAwareness: true
-  });
-});
-
-test("default NPC-attacker and NPC-target routing stays private and anonymous", () => {
-  assert.deepEqual(mapRoutingToRuntime(DEFAULT_ROUTING_CONFIG, {
+    targetIsPlayer: false,
+    targetAware: true
+  }).audience, AUDIENCE.GM);
+  assert.equal(resolveQuickhackRouting(DEFAULT_ROUTING_CONFIG, {
     sourceIsPlayer: false,
     targetIsPlayer: false
+  }).audience, AUDIENCE.GM);
+});
+
+test("an undetected NPC-to-player Jack-In is always complete and GM-only", () => {
+  assert.deepEqual(resolveJackInRouting({
+    ...DEFAULT_ROUTING_CONFIG,
+    npcToPlayerJackInShowTotals: false,
+    npcToPlayerJackInRevealAttacker: false,
+    npcToPlayerJackInAudience: AUDIENCE.PUBLIC
+  }, {
+    sourceIsPlayer: false,
+    targetIsPlayer: true,
+    targetAware: false
   }), {
-    resultVisibility: 0,
-    hideSourceInTargetResult: true,
-    targetAlertAudience: AUDIENCE.GM,
-    includeTargetAlertTotals: true,
-    shareTargetAwareness: true
+    audience: AUDIENCE.GM,
+    revealAttacker: true,
+    showTotals: true,
+    showAwareness: true
   });
 });
 
-test("each actor type uses its own configured routing box", () => {
-  const config = {
+test("a detected NPC-to-player Jack-In honors all three dropdowns", () => {
+  assert.deepEqual(resolveJackInRouting({
     ...DEFAULT_ROUTING_CONFIG,
-    playerAttackerResultAudience: AUDIENCE.GM,
-    npcAttackerResultAudience: AUDIENCE.PUBLIC,
-    npcAttackerRevealIdentity: true,
-    playerTargetAlertAudience: AUDIENCE.GM,
-    playerTargetIncludeTotals: false,
-    npcTargetAlertAudience: AUDIENCE.PUBLIC,
-    npcTargetIncludeTotals: false
-  };
-  assert.deepEqual(mapRoutingToRuntime(config, {
+    npcToPlayerJackInAudience: AUDIENCE.PUBLIC,
+    npcToPlayerJackInShowTotals: false,
+    npcToPlayerJackInRevealAttacker: true
+  }, {
+    sourceIsPlayer: false,
+    targetIsPlayer: true,
+    targetAware: true
+  }), {
+    audience: AUDIENCE.PUBLIC,
+    revealAttacker: true,
+    showTotals: false,
+    showAwareness: true
+  });
+});
+
+test("NPC-to-player Quickhack results honor audience and identity settings", () => {
+  assert.deepEqual(resolveQuickhackRouting({
+    ...DEFAULT_ROUTING_CONFIG,
+    npcToPlayerQuickhackAudience: AUDIENCE.PUBLIC,
+    npcToPlayerQuickhackRevealAttacker: true
+  }, {
     sourceIsPlayer: false,
     targetIsPlayer: true
   }), {
-    resultVisibility: 1,
-    hideSourceInTargetResult: false,
-    targetAlertAudience: AUDIENCE.GM,
-    includeTargetAlertTotals: false,
-    shareTargetAwareness: true
+    audience: AUDIENCE.PUBLIC,
+    revealAttacker: true,
+    showInterfaceTotal: true,
+    showAwareness: true
   });
 });
 
-test("NPC awareness can be withheld from the selected audience", () => {
-  assert.equal(mapRoutingToRuntime({
+test("PC-to-NPC Jack-In awareness can be public or limited to attacker and GM", () => {
+  assert.equal(resolveJackInRouting({
     ...DEFAULT_ROUTING_CONFIG,
-    npcTargetShareAwareness: false
+    playerToNpcJackInAudience: AUDIENCE.PUBLIC
   }, {
     sourceIsPlayer: true,
+    targetIsPlayer: false,
+    targetAware: true
+  }).audience, AUDIENCE.PUBLIC);
+  assert.equal(resolveJackInRouting({
+    ...DEFAULT_ROUTING_CONFIG,
+    playerToNpcJackInAudience: AUDIENCE.SOURCE_OWNERS
+  }, {
+    sourceIsPlayer: true,
+    targetIsPlayer: false,
+    targetAware: true
+  }).audience, AUDIENCE.SOURCE_OWNERS);
+});
+
+test("PC-to-NPC Quickhack and all PC-to-PC results are public", () => {
+  assert.equal(resolveQuickhackRouting(DEFAULT_ROUTING_CONFIG, {
+    sourceIsPlayer: true,
     targetIsPlayer: false
-  }).shareTargetAwareness, false);
+  }).audience, AUDIENCE.PUBLIC);
+  assert.equal(resolveJackInRouting(DEFAULT_ROUTING_CONFIG, {
+    sourceIsPlayer: true,
+    targetIsPlayer: true,
+    targetAware: false
+  }).audience, AUDIENCE.PUBLIC);
+  assert.equal(resolveQuickhackRouting(DEFAULT_ROUTING_CONFIG, {
+    sourceIsPlayer: true,
+    targetIsPlayer: true
+  }).audience, AUDIENCE.PUBLIC);
 });
 
-test("withheld NPC awareness forces detection alerts to GMs", () => {
-  assert.equal(resolveTargetAlertAudience({
-    configuredAudience: AUDIENCE.PUBLIC,
-    targetIsPlayer: false,
-    shareTargetAwareness: false
-  }), AUDIENCE.GM);
-  assert.equal(resolveTargetAlertAudience({
-    configuredAudience: AUDIENCE.PUBLIC,
-    targetIsPlayer: false,
-    shareTargetAwareness: true
-  }), AUDIENCE.PUBLIC);
+test("routing config rejects invalid audience values", () => {
+  assert.deepEqual(normalizeRoutingConfig({
+    npcToPlayerJackInAudience: AUDIENCE.GM,
+    playerToNpcJackInAudience: AUDIENCE.TARGET_OWNERS
+  }), DEFAULT_ROUTING_CONFIG);
 });
 
-test("public results can independently conceal or reveal the Netrunner", () => {
-  const publicAudience = { visibility: "public", recipients: [] };
-  assert.equal(shouldConcealPublicIdentity(publicAudience, true), true);
-  assert.equal(shouldConcealPublicIdentity(publicAudience, false), false);
-});
-
-test("concealed public result keeps the native roll with owners and GMs", () => {
-  assert.deepEqual(resolveInterfaceRollAudience({
-    resultAudience: { visibility: "public", recipients: [] },
-    concealIdentity: true,
+test("private delivery includes the relevant actor owners and GM exactly once", () => {
+  assert.deepEqual(resolveMessageDelivery(AUDIENCE.SOURCE_OWNERS, {
     gmRecipients: ["gm"],
-    sourceOwnerRecipients: ["player"]
-  }), { visibility: "whisper", recipients: ["gm", "player"] });
-});
-
-test("revealed public result leaves the native roll public", () => {
-  const publicAudience = { visibility: "public", recipients: [] };
-  assert.equal(resolveInterfaceRollAudience({
-    resultAudience: publicAudience,
-    concealIdentity: false,
+    sourceOwnerRecipients: ["attacker", "gm"]
+  }), { whisper: ["gm", "attacker"], blind: false });
+  assert.deepEqual(resolveMessageDelivery(AUDIENCE.TARGET_OWNERS, {
     gmRecipients: ["gm"],
-    sourceOwnerRecipients: ["player"]
-  }), publicAudience);
+    targetOwnerRecipients: ["target", "gm"]
+  }), { whisper: ["gm", "target"], blind: false });
+  assert.deepEqual(resolveMessageDelivery(AUDIENCE.GM, {
+    gmRecipients: ["gm"],
+    targetOwnerRecipients: ["target"]
+  }), { whisper: ["gm"], blind: true });
+  assert.deepEqual(resolveMessageDelivery(AUDIENCE.PUBLIC, {
+    gmRecipients: ["gm"]
+  }), { whisper: [], blind: false });
 });

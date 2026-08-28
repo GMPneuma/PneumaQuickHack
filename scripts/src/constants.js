@@ -5,5 +5,3 @@ export const JACK_IN_ACTION_ICON = `modules/${MODULE_ID}/icons/jack-in-action.sv
 export const QUICKHACK_FOLDER_NAME = "Pneuma's Quickhack";
 export const QUICKHACK_ACTION = "quickhack";
 export const JACK_IN_RANGE_SQUARES = 25;
-
-export const RESULT_VISIBILITY = Object.freeze({ GM_ONLY: 0, PUBLIC: 1, SOURCE_OWNERS: 2 });

@@ -23,14 +23,15 @@ Move the existing Jack-In macro into the module and preserve its current feature
 - Require the source actor to have the Netrunner role.
 - Read Interface from the source actor's Netrunner role.
 - Read WILL from the target actor.
-- Use the Cyberpunk RED system's native Interface roll workflow for player-owned Netrunners.
-- Use a private custom Interface roll for NPC Netrunners.
+- Use the Cyberpunk RED system's native Interface roll workflow for player and NPC Netrunners.
+- Make NPC Interface roll cards GM-blind and suppress their Dice So Nice animations.
 - Roll target WILL privately.
 - Support Cyberpunk RED exploding d10 critical successes and critical failures in custom rolls.
 - Compare Interface against WILL to determine whether the target notices the Jack-In attempt.
 - Treat a tie as a failure for the Netrunner, making the target aware.
 - Preserve appropriate public, owner-only, and GM-only chat output.
-- Preserve anonymous target notifications when the Netrunner's identity is concealed.
+- Preserve anonymous result cards when an NPC Netrunner's identity is concealed.
+- Keep Jack-In chat compact: one native Interface attack card and one combined result card. WILL is folded into the result, and no separate detection alert is created.
 
 ### Jack-In Validation
 
@@ -51,33 +52,34 @@ Do not validate:
 
 Replace the configuration constants at the top of the macro with clearly named, GM-only module settings.
 
-Use one **Quickhack Message Settings** window divided into four scenario boxes. Each box asks only who sees the message and what those recipients learn.
+Use one **Pneuma's Quickhack** settings window divided into four attacker → target scenario boxes. Fixed behavior is stated as fact and dropdowns appear only where the GM has a choice.
 
-### Player Netrunner Attacks
+### NPC → NPC
 
-- Complete result recipients: Everyone, Netrunner Owners and GMs, or GMs Only.
-- Identity: reveal the Netrunner or use Unknown Netrunner.
+- Jack-In and Quickhack attack rolls and results are always GM-blind.
+- No configurable options.
 
-### NPC Netrunner Attacks
+### NPC → Player Character
 
-- Complete result recipients: GMs Only or Everyone.
-- Identity: reveal the NPC or use Unknown Netrunner.
-- The underlying NPC Interface roll remains blind to GMs even when its result summary is public.
+- Jack-In and Quickhack attack rolls are always GM-blind.
+- An undetected Jack-In result remains GM-blind.
+- A detected Jack-In result goes either to the target and GM or to everyone.
+- The detected Jack-In result can show or hide Interface and WILL totals.
+- The detected Jack-In and Quickhack result cards independently reveal the NPC or use Unknown Netrunner.
+- The Quickhack result goes either to the target and GM or to everyone and always includes the Interface total.
 
-### Player Character Is Targeted
+### Player Character → NPC
 
-- Detection alert recipients: Target Owners Only, Everyone, or GMs Only.
-- Alert detail: include Interface and WILL totals or report detection only.
+- Attack rolls and Quickhack results are public.
+- The combined Jack-In awareness result always goes to the attacker and GM.
+- The GM chooses whether that result is instead shown to everyone.
 
-### NPC Is Targeted
+### Player Character → Player Character
 
-- Detection alert recipients: GMs Only or Everyone.
-- Alert detail: include Interface and WILL totals or report detection only.
-- Awareness privacy: optionally keep whether the NPC detected the Netrunner GM-only. When hidden, the configured result audience receives a version without awareness status and GMs receive the complete result separately.
+- All Jack-In and Quickhack rolls and results are public.
+- No configurable options.
 
-Player targets never receive a result or detection alert when they fail to detect the Netrunner, even when the attacker's general result audience is Everyone.
-
-Audience and identity remain independent. When a shared result is anonymous, keep the native player Interface roll card private to the Netrunner's owners and GMs so it cannot leak the source identity.
+Each action creates one Interface attack card and one compact result card. The module never adds a second detection-alert or target-notice card.
 
 ## Phase 3: Equippable Quickhacking Items - Implemented
 
@@ -114,7 +116,7 @@ Foundry's Cyberpunk RED system does not appear to maintain or spend a numeric po
 
 Jack Out is deferred because the module will not initially track connections, leaving it with no meaningful mechanical effect beyond a chat declaration.
 
-## Phase 4: Force Invader Out Workflow - Implemented
+## Phase 4: Force Netrunner Out Workflow - Implemented
 
 A character who knows they have been compromised must be able to attempt to force the invading Netrunner out without needing a NET section on their character sheet.
 
@@ -128,14 +130,13 @@ Netrunner: Interface + 1d10
 
 The defender must beat the Netrunner's result. A tie favors the Netrunner.
 
-### Force Invader Out Trigger
+### Force Netrunner Out Trigger
 
-Provide a **Force Invader Out** button in contextual, target-facing chat messages:
+Provide a **Force Netrunner Out** button in contextual, target-facing chat messages:
 
 - Include it when the target detects the initial Jack-In attempt.
-- Include it after every successful Quickhack that alerts the target.
-- Do not include it for a failed Quickhack because failure does not alert the target.
-- Do not include it for a successful Lure because Lure explicitly does not alert the target.
+- Include it after every Quickhack attempt against a player target.
+- For NPC targets, include it after successful non-Lure Quickhacks that alert the target.
 
 The button must:
 
@@ -150,15 +151,17 @@ There will be no manual character-sheet fallback for forcing an invader out beca
 
 The module will not track or enforce the 60-minute lockout following a successful ejection.
 
-### Force Invader Out Status
+### Force Netrunner Out Status
 
-- **Detected Jack-In trigger:** Implemented in the target-facing detection alert.
+- **Detected Jack-In trigger:** Implemented on the single combined result card.
 - **Defender authorization:** Implemented for GMs and Owner-level users only.
 - **Opposed roll:** Implemented with native Concentration and Interface roll dialogs and modifiers.
+- **NPC Netrunner resistance:** Interface is rolled automatically and privately when a PC forces an NPC Netrunner out.
+- **PC Netrunner resistance:** The owning player receives the native Interface dialog when an NPC or another PC attempts to force them out.
 - **Hidden Netrunner handling:** Implemented through active-GM resolution and private Interface output.
 - **Reusable attempts:** Implemented; the chat button remains available after each attempt.
-- **Successful Quickhack triggers:** Implemented for successful, alerting Quickhacks.
-- **Failed Quickhack and Lure exclusions:** Implemented.
+- **Player-target Quickhack triggers:** Implemented for every attempt because a player target becomes aware.
+- **NPC-target Quickhack triggers:** Implemented for successful non-Lure Quickhacks.
 - **Lockout tracking:** Intentionally not implemented.
 
 ## Phase 5: Quickhack Selection and Resolution - Implemented
@@ -174,8 +177,8 @@ Initial workflow:
 5. The Netrunner selects a Quickhack.
 6. The module rolls Interface against the Quickhack's DV.
 7. The module posts the result using the configured visibility rules.
-8. On success, the module applies the supported automation and alerts the target unless the selected Quickhack is Lure.
-9. Any target-facing alert includes **Force Invader Out**.
+8. On success, the module applies the supported automation. Player targets become aware after any attempt; NPC targets are alerted by successful non-Lure Quickhacks.
+9. Any aware-target result includes **Force Netrunner Out**.
 
 Because connections are not tracked, the module will not technically verify that the source is already jacked into the target. Players and GMs are responsible for enforcing that prerequisite.
 
@@ -185,10 +188,10 @@ Because connections are not tracked, the module will not technically verify that
 - **Quickhack picker grouped by difficulty:** Implemented for all eleven CEMK Quickhacks.
 - **Native Interface workflow:** Implemented for both player and NPC Netrunners, including the system modifier and LUCK dialog. NPC roll cards remain GM-only.
 - **Interface versus DV resolution:** Implemented; the Interface total must beat the DV.
-- **Configured result audience, identity, and NPC-awareness privacy:** Implemented.
-- **Successful target awareness:** Implemented without a second detection event. Successful non-Lure Quickhacks place Force Invader Out on the complete result. Target owners receive a minimal private notice only when they could not see that result; GMs are not sent a duplicate notice.
-- **Failed Quickhacks:** Implemented without a target alert or Force Invader Out button.
-- **Successful Lure:** Implemented without a target alert or Force Invader Out button.
+- **Scenario-based result audience and identity:** Implemented using the four attacker → target cases in Phase 2.
+- **Single-card result delivery:** Implemented without a second detection or target-notice event.
+- **Player-target awareness:** Every Quickhack attempt alerts the player target and provides Force Netrunner Out on the result.
+- **NPC-target awareness:** Successful non-Lure Quickhacks alert the NPC; failed Quickhacks and successful Lure do not.
 - **Mechanical Quickhack effects:** Scheduled for Phase 6.
 
 ### Quickhack List
@@ -257,6 +260,8 @@ Before implementing lasting effects, determine how the Cyberpunk RED system hand
 - **Puppet:** Guided handling records control of the target's next Action and Move Action using the target's STATs and Skills.
 
 Target mutations requested by players are resolved by the primary active GM so NPC ownership and hidden data remain protected.
+
+Successful Quickhack cards are compact and include a short, original effect summary in the result itself. The module does not reproduce rulebook effect text or create separate effect-summary chat messages.
 
 The module does not maintain effect timers, round counters, scheduled cleanup, or automatic restoration. Temporary changes are removed manually by the table.
 

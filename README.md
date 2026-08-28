@@ -23,7 +23,7 @@ GMs can enable **Require Owned Quickhacks** in the module settings. In that mode
 The equipped item provides two controls:
 
 - **Jack In** resolves the Interface vs. WILL Jack-In attempt.
-- **Quickhack** opens the complete CEMK Quickhack list, then uses the Cyberpunk RED Interface dialog for modifiers and LUCK before resolving the selected DV. Successful non-Lure hacks alert the target. Synapse Burnout provides a native-style 3d6 damage button and CPR damage card; its GM lightning-bolt control applies damage directly to HP without armor, ablation, or critical bonus damage. Adding CPR's native Damaged Ear injury is automated. MOVE changes and Overheat are guided. Statuses are applied only when registered natively by the system. The module maintains no effect timers or automatic cleanup.
+- **Quickhack** opens the complete CEMK Quickhack list, then uses the Cyberpunk RED Interface dialog for modifiers and LUCK before resolving the selected DV. Player targets are always informed after a Quickhack attempt. Synapse Burnout provides a native-style 3d6 damage button and CPR damage card; its GM lightning-bolt control applies damage directly to HP without armor, ablation, or critical bonus damage. Adding CPR's native Damaged Ear injury is automated. MOVE changes and Overheat are guided. Statuses are applied only when registered natively by the system. The module maintains no effect timers or automatic cleanup.
 
 To use it:
 
@@ -35,14 +35,18 @@ The action requires the Netrunner role, checks ownership and the 25-square range
 
 ## GM Settings
 
-Open **Configure Settings -> Module Settings -> Quickhack Message Settings**. The GM-only window is divided into four boxes:
+Open **Configure Settings -> Module Settings -> Pneuma's Quickhack**. The GM-only window mirrors the four attacker → target scenarios:
 
-- **Player Netrunner Attacks**: choose complete-result recipients and whether other players learn the Netrunner's identity.
-- **NPC Netrunner Attacks**: choose complete-result recipients and whether players learn the NPC's identity.
-- **Player Character Is Targeted**: choose detection-alert recipients and whether the alert includes roll totals.
-- **NPC Is Targeted**: choose detection-alert recipients and whether the alert includes roll totals.
+- **NPC → NPC:** Jack-In and Quickhack rolls and results are always GM-blind.
+- **NPC → Player Character:** attack rolls are always GM-blind. A detected Jack-In can go to the target and GM or everyone, optionally include the opposed totals, and identify or conceal the NPC. Quickhack results can go to the target and GM or everyone and identify or conceal the NPC; the Interface total is always included.
+- **Player Character → NPC:** attack rolls and Quickhack results are public. Jack-In results always go to the attacker and GM; the GM chooses whether everyone sees them instead.
+- **Player Character → Player Character:** all rolls and results are public.
 
-Anonymous shared results keep the underlying player Interface card private to the Netrunner's owners and GMs. NPC Interface rolls remain blind to GMs.
+Each action creates one Interface attack card and one compact result card. There are no additional detection-alert or target-notice cards.
+
+NPC Interface rolls retain the native modifier and LUCK dialog but suppress Dice So Nice animations so hidden NPC rolls do not appear on the table.
+
+NPC Interface rolls retain the native modifier and LUCK dialog but suppress Dice So Nice animations so hidden NPC rolls do not appear on the table.
 
 ## Testing
 
