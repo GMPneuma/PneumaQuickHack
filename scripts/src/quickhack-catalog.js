@@ -3,7 +3,7 @@ import { MODULE_ID } from "./constants.js";
 export const QUICKHACKS = Object.freeze([
   { id: "impair-movement", name: "Impair Movement", tier: "Simple", dv: 6 },
   { id: "sonic-shock", name: "Sonic Shock", tier: "Simple", dv: 6 },
-  { id: "overheat", name: "Overheat", tier: "Standard", dv: 8 },
+  { id: "overheat", name: "Overheat", tier: "Standard", dv: 8, automaticDamageFormula: "4" },
   { id: "short-circuit", name: "Short Circuit", tier: "Standard", dv: 8 },
   { id: "cyberware-malfunction", name: "Cyberware Malfunction", tier: "Difficult", dv: 10 },
   { id: "lure", name: "Lure", tier: "Difficult", dv: 10, silentOnSuccess: true },

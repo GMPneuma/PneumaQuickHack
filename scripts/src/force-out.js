@@ -30,10 +30,6 @@ function activePlayerOwners(actor) {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function messageAuthorId(message) {
-  return message?.author?.id ?? message?.user?.id ?? message?.user;
-}
-
 function audienceForAlert(setting, netrunnerActor, defenderActor, gmRecipients) {
   if (setting === "public") return { visibility: "public", recipients: [] };
   if (setting === "sourceOwners") {
@@ -95,7 +91,7 @@ export async function beginForceOut(message) {
   if (game.user.isGM && isPrimaryActiveGm()) {
     await resolveForceOut({
       messageId: message.id,
-      defenseMessageId: defenseRoll.messageId,
+      defenderTotal: defenseRoll.total,
       requesterId: game.user.id
     });
     return;
@@ -107,30 +103,21 @@ export async function beginForceOut(message) {
   game.socket.emit(SOCKET_NAME, {
     type: "resolveForceOut",
     messageId: message.id,
-    defenseMessageId: defenseRoll.messageId,
+    defenderTotal: defenseRoll.total,
     requesterId: game.user.id
   });
 }
 
-async function validateDefense({ messageId, defenseMessageId, requesterId }) {
+async function validateDefense({ messageId, defenderTotal, requesterId }) {
   if (!isPrimaryActiveGm()) return;
   const context = await resolveContext(messageId);
   const requester = game.users.get(requesterId);
-  const defenseMessage = game.messages.get(defenseMessageId);
-  const defense = defenseMessage?.getFlag(MODULE_ID, "type") === "forceOutDefenseRoll"
-    ? defenseMessage.flags[MODULE_ID]
-    : null;
   if (!context || !requester || (!requester.isGM && !context.defenderActor.testUserPermission(
     requester,
     CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
   ))) return;
-  if (
-    !defense
-    || messageAuthorId(defenseMessage) !== requesterId
-    || defense.defenderActorUuid !== context.defenderActor.uuid
-    || !Number.isFinite(Number(defense.resultTotal))
-  ) return;
-  return { context, defenderTotal: Number(defense.resultTotal) };
+  if (!Number.isFinite(Number(defenderTotal))) return;
+  return { context, defenderTotal: Number(defenderTotal) };
 }
 
 async function postForceOutResult({ context, defenderTotal, interfaceTotal }) {
@@ -172,12 +159,12 @@ async function requestPlayerInterfaceRoll(payload, context) {
     ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.RollAlreadyPending"));
     return;
   }
-  const roller = activePlayerOwners(context.netrunnerActor)[0];
-  if (!roller) {
+  const activeOwner = activePlayerOwners(context.netrunnerActor)[0];
+  const roller = activeOwner ?? game.user;
+  if (!activeOwner) {
     ui.notifications.warn(game.i18n.format("PNEUMA_QUICKHACK.ForceOut.NoActiveOwner", {
       actor: context.netrunnerActor.name
     }));
-    return;
   }
   const requestId = foundry.utils.randomID();
   const timeoutId = setTimeout(() => {
@@ -192,7 +179,7 @@ async function requestPlayerInterfaceRoll(payload, context) {
     netrunnerActorUuid: context.netrunnerActor.uuid,
     timeoutId
   });
-  game.socket.emit(SOCKET_NAME, {
+  const requestPayload = {
     type: "requestForceOutInterfaceRoll",
     requestId,
     messageId: payload.messageId,
@@ -200,15 +187,24 @@ async function requestPlayerInterfaceRoll(payload, context) {
     gmId: game.user.id,
     netrunnerActorUuid: context.netrunnerActor.uuid,
     defenderActorUuid: context.defenderActor.uuid
-  });
+  };
+  if (roller.id === game.user.id) {
+    await performRequestedInterfaceRoll(requestPayload);
+    return;
+  }
+  game.socket.emit(SOCKET_NAME, requestPayload);
   ui.notifications.info(game.i18n.format("PNEUMA_QUICKHACK.ForceOut.WaitingForRoll", {
     player: roller.name
   }));
 }
 
 async function resolveForceOut(payload) {
+  if (!isPrimaryActiveGm()) return;
   const validated = await validateDefense(payload);
-  if (!validated) return;
+  if (!validated) {
+    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ContestInvalid"));
+    return;
+  }
   const { context, defenderTotal } = validated;
 
   const netrunnerRole = findNetrunnerRole(context.netrunnerActor);
@@ -253,22 +249,27 @@ async function performRequestedInterfaceRoll(payload) {
     console.error(`${MODULE_ID} | Unable to complete requested Interface roll`, error);
     ui.notifications.error(game.i18n.localize(error.message));
   }
-  game.socket.emit(SOCKET_NAME, {
+  const responsePayload = {
     type: resistance ? "completeForceOutInterfaceRoll" : "cancelForceOutInterfaceRoll",
     requestId: payload.requestId,
     rollerId: game.user.id,
-    resistanceMessageId: resistance?.messageId ?? null
-  });
+    interfaceTotal: resistance?.total ?? null
+  };
+  if (isPrimaryActiveGm() && game.user.id === payload.gmId) {
+    await completePlayerInterfaceRoll(responsePayload);
+    return;
+  }
+  game.socket.emit(SOCKET_NAME, responsePayload);
 }
 
 async function completePlayerInterfaceRoll(payload) {
   if (!isPrimaryActiveGm()) return;
   const pending = pendingInterfaceRequests.get(payload.requestId);
   if (!pending || pending.rollerId !== payload.rollerId) return;
-  clearTimeout(pending.timeoutId);
-  pendingInterfaceRequests.delete(payload.requestId);
 
   if (payload.type === "cancelForceOutInterfaceRoll") {
+    clearTimeout(pending.timeoutId);
+    pendingInterfaceRequests.delete(payload.requestId);
     const roller = game.users.get(payload.rollerId);
     ui.notifications.warn(game.i18n.format("PNEUMA_QUICKHACK.ForceOut.RollCancelled", {
       player: roller?.name ?? game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.UnknownPlayer")
@@ -277,22 +278,20 @@ async function completePlayerInterfaceRoll(payload) {
   }
 
   const validated = await validateDefense(pending);
-  const resistanceMessage = game.messages.get(payload.resistanceMessageId);
-  const resistance = resistanceMessage?.getFlag(MODULE_ID, "type") === "forceOutResistanceRoll"
-    ? resistanceMessage.flags[MODULE_ID]
-    : null;
-  if (
-    !validated
-    || !resistance
-    || messageAuthorId(resistanceMessage) !== pending.rollerId
-    || resistance.requestId !== payload.requestId
-    || resistance.netrunnerActorUuid !== pending.netrunnerActorUuid
-    || !Number.isFinite(Number(resistance.resultTotal))
-  ) return;
+  const resistanceValid = Boolean(
+    validated
+    && Number.isFinite(Number(payload.interfaceTotal))
+  );
+  clearTimeout(pending.timeoutId);
+  pendingInterfaceRequests.delete(payload.requestId);
+  if (!resistanceValid) {
+    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ContestInvalid"));
+    return;
+  }
   await postForceOutResult({
     context: validated.context,
     defenderTotal: validated.defenderTotal,
-    interfaceTotal: Number(resistance.resultTotal)
+    interfaceTotal: Number(payload.interfaceTotal)
   });
 }
 

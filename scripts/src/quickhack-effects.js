@@ -1,5 +1,6 @@
 import { MODULE_ID, SOCKET_NAME } from "./constants.js";
 import { getQuickhack } from "./quickhack-catalog.js";
+import { createAutomaticQuickhackDamageCard } from "./quickhack-damage.js";
 
 function activeGms() {
   return game.users.filter((user) => user.active && user.isGM).sort((a, b) => a.id.localeCompare(b.id));
@@ -89,6 +90,12 @@ async function resolveEffect({
       await applySonicShock(targetActor);
       break;
     case "overheat":
+      await createAutomaticQuickhackDamageCard({
+        sourceActor,
+        sourceToken: result.sourceTokenUuid ? await fromUuid(result.sourceTokenUuid) : null,
+        targetToken: result.targetTokenUuid ? await fromUuid(result.targetTokenUuid) : null,
+        quickhack
+      });
       break;
     case "slow": {
       const amount = (await new Roll("1d6").evaluate()).total;

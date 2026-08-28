@@ -11,6 +11,38 @@ async function loadCoreDamageWorkflow() {
   return { CPRDamageRoll, CPRChat };
 }
 
+async function prepareQuickhackDamageRoll({
+  sourceActor,
+  sourceToken,
+  targetToken,
+  quickhack,
+  damageFormula
+}) {
+  const { CPRDamageRoll, CPRChat } = await loadCoreDamageWorkflow();
+  class QuickhackDamageRoll extends CPRDamageRoll {
+    wasCritSuccess() {
+      return false;
+    }
+  }
+
+  const damageRoll = new QuickhackDamageRoll(
+    `${quickhack.name} ${game.i18n.localize("PNEUMA_QUICKHACK.Damage.Roll")}`,
+    damageFormula,
+    "program"
+  );
+  damageRoll.isAimed = true;
+  damageRoll.location = "brain";
+  damageRoll.rollCardExtraArgs.ablationValue = 0;
+  await damageRoll.roll();
+  damageRoll.entityData = {
+    actor: sourceActor.id,
+    token: sourceToken?.id ?? null,
+    item: null,
+    tokens: targetToken ? [targetToken] : []
+  };
+  return { damageRoll, CPRChat };
+}
+
 export function isQuickhackDamageContextValid(context, quickhack) {
   return context?.type === "quickhackAttackRoll"
     && context.success === true
@@ -76,26 +108,43 @@ export async function rollQuickhackDamage(message) {
     return null;
   }
 
-  const { CPRDamageRoll, CPRChat } = await loadCoreDamageWorkflow();
-  class QuickhackDamageRoll extends CPRDamageRoll {
-    wasCritSuccess() {
-      return false;
-    }
-  }
-
-  const damageRoll = new QuickhackDamageRoll(
-    `${quickhack.name} ${game.i18n.localize("PNEUMA_QUICKHACK.Damage.Roll")}`,
-    quickhack.damageFormula,
-    "program"
-  );
-  damageRoll.isAimed = true;
-  damageRoll.location = "brain";
-  await damageRoll.roll();
-  damageRoll.entityData = {
-    actor: sourceActor.id,
-    token: sourceToken?.id ?? null,
-    item: null,
-    tokens: [targetToken]
-  };
+  const { damageRoll, CPRChat } = await prepareQuickhackDamageRoll({
+    sourceActor,
+    sourceToken,
+    targetToken,
+    quickhack,
+    damageFormula: quickhack.damageFormula
+  });
   return CPRChat.RenderRollCard(damageRoll);
+}
+
+export async function createAutomaticQuickhackDamageCard({
+  sourceActor,
+  sourceToken,
+  targetToken,
+  quickhack
+}) {
+  if (!quickhack?.automaticDamageFormula) return null;
+  const { damageRoll } = await prepareQuickhackDamageRoll({
+    sourceActor,
+    sourceToken,
+    targetToken,
+    quickhack,
+    damageFormula: quickhack.automaticDamageFormula
+  });
+  damageRoll.criticalCard = damageRoll.wasCritical();
+  const content = await renderTemplate(damageRoll.rollCard, damageRoll);
+  return ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor: sourceActor, token: sourceToken }),
+    whisper: ChatMessage.getWhisperRecipients("GM").map((user) => user.id),
+    blind: true,
+    content,
+    flags: { [MODULE_ID]: {
+      type: "quickhackDamageCard",
+      quickhackId: quickhack.id,
+      sourceActorUuid: sourceActor.uuid,
+      targetActorUuid: targetToken?.actor?.uuid ?? null,
+      gmOnly: true
+    } }
+  });
 }

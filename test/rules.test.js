@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -23,6 +24,12 @@ import { isQuickhackDamageContextValid } from "../scripts/src/quickhack-damage.j
 import { isQuickhackHotbarDrop } from "../scripts/src/hotbar-rules.js";
 import { resolveMessageDelivery } from "../scripts/src/messages.js";
 import { forceOutInterfaceMode } from "../scripts/src/force-out.js";
+
+const moduleManifest = JSON.parse(readFileSync(new URL("../module.json", import.meta.url), "utf8"));
+
+test("module socket support is enabled for cross-client contests", () => {
+  assert.equal(moduleManifest.socket, true);
+});
 
 test("defender ejects the Netrunner only by beating Interface", () => {
   assert.equal(isNetrunnerEjected(15, 14), true);
@@ -53,10 +60,18 @@ test("catalog contains all eleven CEMK Quickhacks and keeps Lure silent", () => 
   assert.equal(getQuickhack("lure").silentOnSuccess, true);
 });
 
-test("only Synapse Burnout defines native damage", () => {
+test("Synapse Burnout alone provides a manual damage action", () => {
   assert.deepEqual(
     QUICKHACKS.filter((quickhack) => quickhack.damageFormula).map(({ id, damageFormula }) => ({ id, damageFormula })),
     [{ id: "synapse-burnout", damageFormula: "3d6" }]
+  );
+});
+
+test("Overheat provides a fixed automatic damage card", () => {
+  assert.deepEqual(
+    QUICKHACKS.filter((quickhack) => quickhack.automaticDamageFormula)
+      .map(({ id, automaticDamageFormula }) => ({ id, automaticDamageFormula })),
+    [{ id: "overheat", automaticDamageFormula: "4" }]
   );
 });
 

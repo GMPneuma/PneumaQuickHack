@@ -23,7 +23,7 @@ GMs can enable **Require Owned Quickhacks** in the module settings. In that mode
 The equipped item provides two controls:
 
 - **Jack In** resolves the Interface vs. WILL Jack-In attempt.
-- **Quickhack** opens the complete CEMK Quickhack list, then uses the Cyberpunk RED Interface dialog for modifiers and LUCK before resolving the selected DV. Player targets are always informed after a Quickhack attempt. Synapse Burnout provides a native-style 3d6 damage button and CPR damage card; its GM lightning-bolt control applies damage directly to HP without armor, ablation, or critical bonus damage. Adding CPR's native Damaged Ear injury is automated. MOVE changes and Overheat are guided. Statuses are applied only when registered natively by the system. The module maintains no effect timers or automatic cleanup.
+- **Quickhack** opens the complete CEMK Quickhack list, then uses the Cyberpunk RED Interface dialog for modifiers and LUCK before resolving the selected DV. Player targets are always informed after a Quickhack attempt. Synapse Burnout provides a native-style 3d6 damage button and CPR damage card. Overheat automatically creates a reusable GM-only 4-damage card for its ongoing damage. Both use the native lightning-bolt control to apply damage directly to HP without armor, ablation, or critical bonus damage. Adding CPR's native Damaged Ear injury is automated. MOVE changes and ongoing timing remain guided. Statuses are applied only when registered natively by the system. The module maintains no effect timers or automatic cleanup.
 
 To use it:
 

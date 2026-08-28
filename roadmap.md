@@ -249,7 +249,7 @@ Before implementing lasting effects, determine how the Cyberpunk RED system hand
 
 - **Impair Movement:** Guided handling only. The module does not change or track MOVE.
 - **Sonic Shock:** Adds CPR's native Damaged Ear Critical Injury without bonus damage. Players remove it manually when the effect ends.
-- **Overheat:** Guided handling only. Cyberpunk RED registers no native On Fire status, so this module does not create a substitute status or automate ongoing fire damage.
+- **Overheat:** A successful Quickhack creates a reusable GM-only native damage card fixed at 4 direct HP damage. The GM applies it with CPR's lightning-bolt control after each applicable turn. The module creates no substitute On Fire status and does not track timing or cleanup.
 - **Slow:** Rolls the 1d6 penalty and reports it as guidance. The module does not change or track MOVE.
 - **Synapse Burnout:** Uses CPR's native-style 3d6 damage roll card. The Netrunner rolls damage from the successful Quickhack result, and the GM applies it to the original target with the native lightning-bolt control. Damage is treated as brain damage so it bypasses armor without ablation; Quickhack damage criticals and their +5 bonus are disabled.
 - **System Reset:** Applies only Unconscious and/or Prone statuses registered natively by the active system, without timers or wake-up tracking. Players remove them manually. If neither exists, it provides guided handling.

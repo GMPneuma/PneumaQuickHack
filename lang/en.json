@@ -104,18 +104,19 @@
   "PNEUMA_QUICKHACK.ForceOut.Failure": "{defender} fails to force {netrunner} out of their Neuroport.",
   "PNEUMA_QUICKHACK.ForceOut.DefenderTotal": "WILL + Concentration",
   "PNEUMA_QUICKHACK.ForceOut.InterfaceTotal": "Interface",
-  "PNEUMA_QUICKHACK.ForceOut.NoActiveOwner": "No active player owner is available to roll Interface for {actor}.",
+  "PNEUMA_QUICKHACK.ForceOut.NoActiveOwner": "No active player owner is available for {actor}; the GM will roll Interface.",
   "PNEUMA_QUICKHACK.ForceOut.WaitingForRoll": "Waiting for {player} to roll Interface.",
   "PNEUMA_QUICKHACK.ForceOut.RollTimedOut": "The Interface roll request sent to {player} timed out.",
   "PNEUMA_QUICKHACK.ForceOut.RollCancelled": "{player} cancelled the Interface roll.",
   "PNEUMA_QUICKHACK.ForceOut.RollAlreadyPending": "An Interface roll request is already pending for this attempt.",
+  "PNEUMA_QUICKHACK.ForceOut.ContestInvalid": "The Force Netrunner Out contest could not be completed. Try the action again.",
   "PNEUMA_QUICKHACK.ForceOut.UnknownPlayer": "Unknown Player"
   ,"PNEUMA_QUICKHACK.Effect.ActiveGmRequired": "An active GM is required to apply Quickhack effects to the target."
   ,"PNEUMA_QUICKHACK.Effect.Label": "Effect"
   ,"PNEUMA_QUICKHACK.Effect.Resolving": "Resolving effect..."
   ,"PNEUMA_QUICKHACK.Effect.Summary.impair-movement": "Reduce the target's MOVE by 1 for 60 seconds; restore it manually."
   ,"PNEUMA_QUICKHACK.Effect.Summary.sonic-shock": "Damaged Ear added without injury damage; remove it when the effect ends."
-  ,"PNEUMA_QUICKHACK.Effect.Summary.overheat": "Track 4 direct HP damage after each target turn until the fire is extinguished."
+  ,"PNEUMA_QUICKHACK.Effect.Summary.overheat": "Use the accompanying 4-damage card after each target turn until the fire is extinguished."
   ,"PNEUMA_QUICKHACK.Effect.Summary.short-circuit": "Choose three eligible cyberware components; disable them for 60 seconds."
   ,"PNEUMA_QUICKHACK.Effect.Summary.cyberware-malfunction": "Choose one cyberware component; disable it and its options for 60 seconds."
   ,"PNEUMA_QUICKHACK.Effect.Summary.lure": "Redirect the target's next Move toward a false sound."
