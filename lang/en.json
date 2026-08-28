@@ -110,10 +110,14 @@
   "PNEUMA_QUICKHACK.ForceOut.RollCancelled": "{player} cancelled the Interface roll.",
   "PNEUMA_QUICKHACK.ForceOut.RollAlreadyPending": "An Interface roll request is already pending for this attempt.",
   "PNEUMA_QUICKHACK.ForceOut.ContestInvalid": "The Force Netrunner Out contest could not be completed. Try the action again.",
+  "PNEUMA_QUICKHACK.ForceOut.UnexpectedError": "The Force Netrunner Out contest encountered an unexpected error. Try the action again or ask the GM to check their console.",
   "PNEUMA_QUICKHACK.ForceOut.UnknownPlayer": "Unknown Player"
   ,"PNEUMA_QUICKHACK.Effect.ActiveGmRequired": "An active GM is required to apply Quickhack effects to the target."
   ,"PNEUMA_QUICKHACK.Effect.Label": "Effect"
   ,"PNEUMA_QUICKHACK.Effect.Resolving": "Resolving effect..."
+  ,"PNEUMA_QUICKHACK.Effect.ManualResolutionRequired": "Automatic handling failed; resolve this effect manually."
+  ,"PNEUMA_QUICKHACK.Effect.ResultMessageMissing": "The Quickhack result did not synchronize to the GM. Resolve its effect manually."
+  ,"PNEUMA_QUICKHACK.Effect.RequestInvalid": "The Quickhack effect request could not be validated."
   ,"PNEUMA_QUICKHACK.Effect.Summary.impair-movement": "Reduce the target's MOVE by 1 for 60 seconds; restore it manually."
   ,"PNEUMA_QUICKHACK.Effect.Summary.sonic-shock": "Damaged Ear added without injury damage; remove it when the effect ends."
   ,"PNEUMA_QUICKHACK.Effect.Summary.overheat": "Use the accompanying 4-damage card after each target turn until the fire is extinguished."

@@ -90,6 +90,12 @@
   padding: 0.4rem 0.5rem;
 }
 
+.pneuma-quickhack-effect-slot.failure {
+  background: rgba(180, 0, 0, 0.08);
+  border-color: rgba(180, 0, 0, 0.35);
+  color: #8b0000;
+}
+
 .pneuma-quickhack-picker-prompt {
   font-weight: 700;
   margin: 0 0 0.6rem;

@@ -21,6 +21,28 @@ function isPrimaryActiveGm() {
   return game.user.isGM && activeGms()[0]?.id === game.user.id;
 }
 
+function notifyForceOutFailure(requesterId, messageKey, messageData = {}, level = "error") {
+  ui.notifications[level](game.i18n.format(messageKey, messageData));
+  if (!isPrimaryActiveGm() || !requesterId || requesterId === game.user.id) return;
+  game.socket.emit(SOCKET_NAME, {
+    type: "forceOutFailure",
+    requesterId,
+    gmId: game.user.id,
+    messageKey,
+    messageData,
+    level
+  });
+}
+
+function receiveForceOutFailure(payload) {
+  if (
+    payload.requesterId !== game.user.id
+    || payload.gmId !== activeGms()[0]?.id
+  ) return;
+  const level = payload.level === "warn" ? "warn" : "error";
+  ui.notifications[level](game.i18n.format(payload.messageKey, payload.messageData ?? {}));
+}
+
 function activePlayerOwners(actor) {
   return game.users
     .filter((user) => user.active && !user.isGM && actor.testUserPermission(
@@ -69,6 +91,10 @@ export async function beginForceOut(message) {
     ui.notifications.error(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.NotAuthorized"));
     return;
   }
+  if (!isPrimaryActiveGm() && activeGms().length === 0) {
+    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ActiveGmRequired"));
+    return;
+  }
 
   const gmRecipients = ChatMessage.getWhisperRecipients("GM").map((user) => user.id);
   let defenseRoll;
@@ -89,15 +115,16 @@ export async function beginForceOut(message) {
   if (defenseRoll === null) return;
 
   if (game.user.isGM && isPrimaryActiveGm()) {
-    await resolveForceOut({
-      messageId: message.id,
-      defenderTotal: defenseRoll.total,
-      requesterId: game.user.id
-    });
-    return;
-  }
-  if (activeGms().length === 0) {
-    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ActiveGmRequired"));
+    try {
+      await resolveForceOut({
+        messageId: message.id,
+        defenderTotal: defenseRoll.total,
+        requesterId: game.user.id
+      });
+    } catch (error) {
+      console.error(`${MODULE_ID} | Unable to complete Force Netrunner Out`, error);
+      notifyForceOutFailure(game.user.id, "PNEUMA_QUICKHACK.ForceOut.UnexpectedError");
+    }
     return;
   }
   game.socket.emit(SOCKET_NAME, {
@@ -156,7 +183,12 @@ async function postForceOutResult({ context, defenderTotal, interfaceTotal }) {
 
 async function requestPlayerInterfaceRoll(payload, context) {
   if ([...pendingInterfaceRequests.values()].some((pending) => pending.messageId === payload.messageId)) {
-    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.RollAlreadyPending"));
+    notifyForceOutFailure(
+      payload.requesterId,
+      "PNEUMA_QUICKHACK.ForceOut.RollAlreadyPending",
+      {},
+      "warn"
+    );
     return;
   }
   const activeOwner = activePlayerOwners(context.netrunnerActor)[0];
@@ -169,9 +201,12 @@ async function requestPlayerInterfaceRoll(payload, context) {
   const requestId = foundry.utils.randomID();
   const timeoutId = setTimeout(() => {
     if (!pendingInterfaceRequests.delete(requestId)) return;
-    ui.notifications.warn(game.i18n.format("PNEUMA_QUICKHACK.ForceOut.RollTimedOut", {
-      player: roller.name
-    }));
+    notifyForceOutFailure(
+      payload.requesterId,
+      "PNEUMA_QUICKHACK.ForceOut.RollTimedOut",
+      { player: roller.name },
+      "warn"
+    );
   }, 120000);
   pendingInterfaceRequests.set(requestId, {
     ...payload,
@@ -183,6 +218,7 @@ async function requestPlayerInterfaceRoll(payload, context) {
     type: "requestForceOutInterfaceRoll",
     requestId,
     messageId: payload.messageId,
+    requesterId: payload.requesterId,
     rollerId: roller.id,
     gmId: game.user.id,
     netrunnerActorUuid: context.netrunnerActor.uuid,
@@ -202,14 +238,14 @@ async function resolveForceOut(payload) {
   if (!isPrimaryActiveGm()) return;
   const validated = await validateDefense(payload);
   if (!validated) {
-    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ContestInvalid"));
+    notifyForceOutFailure(payload.requesterId, "PNEUMA_QUICKHACK.ForceOut.ContestInvalid", {}, "warn");
     return;
   }
   const { context, defenderTotal } = validated;
 
   const netrunnerRole = findNetrunnerRole(context.netrunnerActor);
   if (!netrunnerRole || !Number.isFinite(Number(netrunnerRole.system.rank))) {
-    ui.notifications.error(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.InterfaceMissing"));
+    notifyForceOutFailure(payload.requesterId, "PNEUMA_QUICKHACK.ForceOut.InterfaceMissing");
     return;
   }
   if (forceOutInterfaceMode(context.netrunnerActor.hasPlayerOwner) === "playerPrompt") {
@@ -252,6 +288,7 @@ async function performRequestedInterfaceRoll(payload) {
   const responsePayload = {
     type: resistance ? "completeForceOutInterfaceRoll" : "cancelForceOutInterfaceRoll",
     requestId: payload.requestId,
+    requesterId: payload.requesterId,
     rollerId: game.user.id,
     interfaceTotal: resistance?.total ?? null
   };
@@ -271,9 +308,12 @@ async function completePlayerInterfaceRoll(payload) {
     clearTimeout(pending.timeoutId);
     pendingInterfaceRequests.delete(payload.requestId);
     const roller = game.users.get(payload.rollerId);
-    ui.notifications.warn(game.i18n.format("PNEUMA_QUICKHACK.ForceOut.RollCancelled", {
-      player: roller?.name ?? game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.UnknownPlayer")
-    }));
+    notifyForceOutFailure(
+      pending.requesterId,
+      "PNEUMA_QUICKHACK.ForceOut.RollCancelled",
+      { player: roller?.name ?? game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.UnknownPlayer") },
+      "warn"
+    );
     return;
   }
 
@@ -285,7 +325,7 @@ async function completePlayerInterfaceRoll(payload) {
   clearTimeout(pending.timeoutId);
   pendingInterfaceRequests.delete(payload.requestId);
   if (!resistanceValid) {
-    ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.ContestInvalid"));
+    notifyForceOutFailure(pending.requesterId, "PNEUMA_QUICKHACK.ForceOut.ContestInvalid", {}, "warn");
     return;
   }
   await postForceOutResult({
@@ -295,12 +335,34 @@ async function completePlayerInterfaceRoll(payload) {
   });
 }
 
+function requesterForSocketPayload(payload) {
+  if (payload?.requesterId) return payload.requesterId;
+  if (payload?.requestId) return pendingInterfaceRequests.get(payload.requestId)?.requesterId ?? payload.rollerId;
+  return null;
+}
+
+async function dispatchForceOutSocket(payload) {
+  if (payload?.type === "forceOutFailure") {
+    receiveForceOutFailure(payload);
+    return;
+  }
+  if (payload?.type === "resolveForceOut") await resolveForceOut(payload);
+  if (payload?.type === "requestForceOutInterfaceRoll") await performRequestedInterfaceRoll(payload);
+  if (["completeForceOutInterfaceRoll", "cancelForceOutInterfaceRoll"].includes(payload?.type)) {
+    await completePlayerInterfaceRoll(payload);
+  }
+}
+
 export function registerForceOutSocket() {
   game.socket.on(SOCKET_NAME, (payload) => {
-    if (payload?.type === "resolveForceOut") void resolveForceOut(payload);
-    if (payload?.type === "requestForceOutInterfaceRoll") void performRequestedInterfaceRoll(payload);
-    if (["completeForceOutInterfaceRoll", "cancelForceOutInterfaceRoll"].includes(payload?.type)) {
-      void completePlayerInterfaceRoll(payload);
-    }
+    void dispatchForceOutSocket(payload).catch((error) => {
+      console.error(`${MODULE_ID} | Unable to complete Force Netrunner Out socket request`, error);
+      const requesterId = requesterForSocketPayload(payload);
+      if (isPrimaryActiveGm()) {
+        notifyForceOutFailure(requesterId, "PNEUMA_QUICKHACK.ForceOut.UnexpectedError");
+      } else if (requesterId === game.user.id || payload?.rollerId === game.user.id) {
+        ui.notifications.error(game.i18n.localize("PNEUMA_QUICKHACK.ForceOut.UnexpectedError"));
+      }
+    });
   });
 }

@@ -21,6 +21,7 @@ import {
 } from "../scripts/src/routing-config.js";
 import { QUICKHACKS, getOwnedQuickhacks, getQuickhack } from "../scripts/src/quickhack-catalog.js";
 import { isQuickhackDamageContextValid } from "../scripts/src/quickhack-damage.js";
+import { waitForQuickhackResultMessage } from "../scripts/src/quickhack-effects.js";
 import { isQuickhackHotbarDrop } from "../scripts/src/hotbar-rules.js";
 import { resolveMessageDelivery } from "../scripts/src/messages.js";
 import { forceOutInterfaceMode } from "../scripts/src/force-out.js";
@@ -29,6 +30,41 @@ const moduleManifest = JSON.parse(readFileSync(new URL("../module.json", import.
 
 test("module socket support is enabled for cross-client contests", () => {
   assert.equal(moduleManifest.socket, true);
+});
+
+test("Quickhack effects wait for the result card to synchronize", async () => {
+  const hadGame = Object.hasOwn(globalThis, "game");
+  const previousGame = globalThis.game;
+  const hadHooks = Object.hasOwn(globalThis, "Hooks");
+  const previousHooks = globalThis.Hooks;
+  let synchronizedMessage = null;
+  let createHandler = null;
+  let removedHook = null;
+  globalThis.game = {
+    messages: { get: () => synchronizedMessage }
+  };
+  globalThis.Hooks = {
+    on: (_event, handler) => {
+      createHandler = handler;
+      return 42;
+    },
+    off: (event, hookId) => {
+      removedHook = { event, hookId };
+    }
+  };
+
+  try {
+    const pending = waitForQuickhackResultMessage("message-1", { timeoutMs: 100 });
+    synchronizedMessage = { id: "message-1" };
+    createHandler(synchronizedMessage);
+    assert.equal(await pending, synchronizedMessage);
+    assert.deepEqual(removedHook, { event: "createChatMessage", hookId: 42 });
+  } finally {
+    if (hadGame) globalThis.game = previousGame;
+    else delete globalThis.game;
+    if (hadHooks) globalThis.Hooks = previousHooks;
+    else delete globalThis.Hooks;
+  }
 });
 
 test("defender ejects the Netrunner only by beating Interface", () => {

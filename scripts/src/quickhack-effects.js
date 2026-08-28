@@ -2,6 +2,8 @@ import { MODULE_ID, SOCKET_NAME } from "./constants.js";
 import { getQuickhack } from "./quickhack-catalog.js";
 import { createAutomaticQuickhackDamageCard } from "./quickhack-damage.js";
 
+const RESULT_MESSAGE_SYNC_TIMEOUT_MS = 8000;
+
 function activeGms() {
   return game.users.filter((user) => user.active && user.isGM).sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -52,6 +54,64 @@ async function appendEffectSummary(message, detailKey, detailData) {
   });
 }
 
+async function appendEffectFailure(message) {
+  if (!message) return;
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = message.content;
+  const slot = wrapper.querySelector(".pneuma-quickhack-effect-slot");
+  if (!slot) return;
+  slot.classList.add("failure");
+  slot.innerHTML = `<strong>${game.i18n.localize("PNEUMA_QUICKHACK.Effect.Label")}:</strong>
+    ${game.i18n.localize("PNEUMA_QUICKHACK.Effect.ManualResolutionRequired")}`;
+  await message.update({
+    content: wrapper.innerHTML,
+    [`flags.${MODULE_ID}.effectResolved`]: true,
+    [`flags.${MODULE_ID}.effectFailed`]: true
+  });
+}
+
+async function receiveEffectFailure(payload) {
+  if (
+    payload.requesterId !== game.user.id
+    || payload.gmId !== activeGms()[0]?.id
+  ) return;
+  const resultMessage = game.messages.get(payload.resultMessageId);
+  await appendEffectFailure(resultMessage);
+  ui.notifications.error(game.i18n.localize("PNEUMA_QUICKHACK.Effect.ManualResolutionRequired"));
+}
+
+export function waitForQuickhackResultMessage(
+  messageId,
+  { timeoutMs = RESULT_MESSAGE_SYNC_TIMEOUT_MS } = {}
+) {
+  const existing = game.messages.get(messageId);
+  if (existing) return Promise.resolve(existing);
+
+  return new Promise((resolve) => {
+    let hookId = null;
+    let timeoutId = null;
+    let settled = false;
+    const finish = (message) => {
+      if (settled) return;
+      settled = true;
+      if (hookId !== null) Hooks.off("createChatMessage", hookId);
+      if (timeoutId !== null) clearTimeout(timeoutId);
+      resolve(message);
+    };
+    hookId = Hooks.on("createChatMessage", (message) => {
+      if (message.id === messageId) finish(message);
+    });
+
+    // Close the gap between the initial lookup and registering the Hook.
+    const synchronized = game.messages.get(messageId);
+    if (synchronized) {
+      finish(synchronized);
+      return;
+    }
+    timeoutId = setTimeout(() => finish(null), timeoutMs);
+  });
+}
+
 async function resolveEffect({
   sourceActorUuid,
   targetActorUuid,
@@ -66,60 +126,70 @@ async function resolveEffect({
   ]);
   const requester = game.users.get(requesterId);
   const quickhack = getQuickhack(quickhackId);
-  const resultMessage = game.messages.get(resultMessageId);
+  const resultMessage = await waitForQuickhackResultMessage(resultMessageId);
   const result = resultMessage?.getFlag(MODULE_ID, "type") === "quickhackResult"
     ? resultMessage.flags[MODULE_ID]
     : null;
   const authorId = resultMessage?.author?.id ?? resultMessage?.user?.id ?? resultMessage?.user;
-  if (!sourceActor || !targetActor || !requester || !quickhack || !result) return;
-  if (!requester.isGM && !sourceActor.testUserPermission(requester, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) return;
+  if (!resultMessage) throw new Error("PNEUMA_QUICKHACK.Effect.ResultMessageMissing");
+  if (!sourceActor || !targetActor || !requester || !quickhack || !result) {
+    throw new Error("PNEUMA_QUICKHACK.Effect.RequestInvalid");
+  }
+  if (!requester.isGM && !sourceActor.testUserPermission(requester, CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER)) {
+    throw new Error("PNEUMA_QUICKHACK.Effect.RequestInvalid");
+  }
   if (
     authorId !== requesterId
     || result.success !== true
     || result.sourceActorUuid !== sourceActorUuid
     || result.targetActorUuid !== targetActorUuid
     || result.quickhackId !== quickhackId
-  ) return;
+  ) throw new Error("PNEUMA_QUICKHACK.Effect.RequestInvalid");
 
   let detailKey = `PNEUMA_QUICKHACK.Effect.Summary.${quickhack.id}`;
   const detailData = { target: targetActor.name };
-  switch (quickhack.id) {
-    case "impair-movement":
-      break;
-    case "sonic-shock":
-      await applySonicShock(targetActor);
-      break;
-    case "overheat":
-      await createAutomaticQuickhackDamageCard({
-        sourceActor,
-        sourceToken: result.sourceTokenUuid ? await fromUuid(result.sourceTokenUuid) : null,
-        targetToken: result.targetTokenUuid ? await fromUuid(result.targetTokenUuid) : null,
-        quickhack
-      });
-      break;
-    case "slow": {
-      const amount = (await new Roll("1d6").evaluate()).total;
-      detailData.amount = amount;
-      break;
-    }
-    case "system-reset": {
-      const statuses = nativeStatuses(["unconscious", "prone"]);
-      if (statuses.length) {
-        await createStatusEffect(targetActor, {
-          name: "Quickhack: System Reset",
-          icon: "icons/svg/unconscious.svg",
-          statuses,
-          flags: { quickhackId: quickhack.id }
+  try {
+    switch (quickhack.id) {
+      case "impair-movement":
+        break;
+      case "sonic-shock":
+        await applySonicShock(targetActor);
+        break;
+      case "overheat":
+        await createAutomaticQuickhackDamageCard({
+          sourceActor,
+          sourceToken: result.sourceTokenUuid ? await fromUuid(result.sourceTokenUuid) : null,
+          targetToken: result.targetTokenUuid ? await fromUuid(result.targetTokenUuid) : null,
+          quickhack
         });
-        detailData.statuses = statuses.join(", ");
-      } else {
-        detailKey = "PNEUMA_QUICKHACK.Effect.Summary.system-reset-manual";
+        break;
+      case "slow": {
+        const amount = (await new Roll("1d6").evaluate()).total;
+        detailData.amount = amount;
+        break;
       }
-      break;
+      case "system-reset": {
+        const statuses = nativeStatuses(["unconscious", "prone"]);
+        if (statuses.length) {
+          await createStatusEffect(targetActor, {
+            name: "Quickhack: System Reset",
+            icon: "icons/svg/unconscious.svg",
+            statuses,
+            flags: { quickhackId: quickhack.id }
+          });
+          detailData.statuses = statuses.join(", ");
+        } else {
+          detailKey = "PNEUMA_QUICKHACK.Effect.Summary.system-reset-manual";
+        }
+        break;
+      }
+      default:
     }
-    default:
+    await appendEffectSummary(resultMessage, detailKey, detailData);
+  } catch (error) {
+    await appendEffectFailure(resultMessage);
+    throw error;
   }
-  await appendEffectSummary(resultMessage, detailKey, detailData);
 }
 
 export async function applyQuickhackEffect({ sourceActor, targetActor, quickhack, resultMessage }) {
@@ -135,6 +205,7 @@ export async function applyQuickhackEffect({ sourceActor, targetActor, quickhack
   if (isPrimaryActiveGm()) return resolveEffect(payload);
   if (activeGms().length === 0) {
     ui.notifications.warn(game.i18n.localize("PNEUMA_QUICKHACK.Effect.ActiveGmRequired"));
+    await appendEffectFailure(resultMessage);
     return;
   }
   game.socket.emit(SOCKET_NAME, payload);
@@ -142,10 +213,25 @@ export async function applyQuickhackEffect({ sourceActor, targetActor, quickhack
 
 export function registerQuickhackEffects() {
   game.socket.on(SOCKET_NAME, (payload) => {
+    if (payload?.type === "quickhackEffectFailed") {
+      void receiveEffectFailure(payload).catch((error) => {
+        console.error(`${MODULE_ID} | Unable to display Quickhack effect failure`, error);
+        ui.notifications.error(game.i18n.localize("PNEUMA_QUICKHACK.Effect.ManualResolutionRequired"));
+      });
+      return;
+    }
     if (payload?.type === "applyQuickhackEffect") {
       void resolveEffect(payload).catch((error) => {
         console.error(`${MODULE_ID} | Unable to apply Quickhack effect`, error);
         ui.notifications.error(game.i18n.localize(error.message));
+        if (isPrimaryActiveGm() && payload.requesterId !== game.user.id) {
+          game.socket.emit(SOCKET_NAME, {
+            type: "quickhackEffectFailed",
+            requesterId: payload.requesterId,
+            gmId: game.user.id,
+            resultMessageId: payload.resultMessageId
+          });
+        }
       });
     }
   });
