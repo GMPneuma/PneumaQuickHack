@@ -43,7 +43,8 @@ export class QuickhackMessageSettings extends FormApplication {
       },
       awarenessChoices: {
         [AUDIENCE.PUBLIC]: "PNEUMA_QUICKHACK.Settings.Choice.ShowNpcAwareness",
-        [AUDIENCE.SOURCE_OWNERS]: "PNEUMA_QUICKHACK.Settings.Choice.AttackerOnlyAwareness"
+        [AUDIENCE.SOURCE_OWNERS]: "PNEUMA_QUICKHACK.Settings.Choice.AttackerOnlyAwareness",
+        [AUDIENCE.GM]: "PNEUMA_QUICKHACK.Settings.Choice.GmOnly"
       }
     };
   }

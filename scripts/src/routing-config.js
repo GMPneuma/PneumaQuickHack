@@ -14,11 +14,11 @@ export const SCENARIO = Object.freeze({
 
 export const DEFAULT_ROUTING_CONFIG = Object.freeze({
   npcToPlayerJackInAudience: AUDIENCE.TARGET_OWNERS,
-  npcToPlayerJackInShowTotals: true,
+  npcToPlayerJackInShowTotals: false,
   npcToPlayerJackInRevealAttacker: false,
-  npcToPlayerQuickhackAudience: AUDIENCE.TARGET_OWNERS,
+  npcToPlayerQuickhackAudience: AUDIENCE.PUBLIC,
   npcToPlayerQuickhackRevealAttacker: false,
-  playerToNpcJackInAudience: AUDIENCE.PUBLIC
+  playerToNpcJackInAudience: AUDIENCE.SOURCE_OWNERS
 });
 
 function normalizedBoolean(value, fallback) {
@@ -30,7 +30,7 @@ function normalizedPlayerAudience(value, fallback) {
 }
 
 function normalizedAttackerAudience(value, fallback) {
-  return [AUDIENCE.SOURCE_OWNERS, AUDIENCE.PUBLIC].includes(value) ? value : fallback;
+  return [AUDIENCE.SOURCE_OWNERS, AUDIENCE.PUBLIC, AUDIENCE.GM].includes(value) ? value : fallback;
 }
 
 export function normalizeRoutingConfig(config = {}) {

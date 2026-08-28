@@ -32,6 +32,17 @@ test("module socket support is enabled for cross-client contests", () => {
   assert.equal(moduleManifest.socket, true);
 });
 
+test("message routing defaults match the standard Quickhack workflow", () => {
+  assert.deepEqual(DEFAULT_ROUTING_CONFIG, {
+    npcToPlayerJackInAudience: AUDIENCE.TARGET_OWNERS,
+    npcToPlayerJackInShowTotals: false,
+    npcToPlayerJackInRevealAttacker: false,
+    npcToPlayerQuickhackAudience: AUDIENCE.PUBLIC,
+    npcToPlayerQuickhackRevealAttacker: false,
+    playerToNpcJackInAudience: AUDIENCE.SOURCE_OWNERS
+  });
+});
+
 test("Quickhack effects wait for the result card to synchronize", async () => {
   const hadGame = Object.hasOwn(globalThis, "game");
   const previousGame = globalThis.game;
@@ -249,7 +260,7 @@ test("NPC-to-player Quickhack results honor audience and identity settings", () 
   });
 });
 
-test("PC-to-NPC Jack-In awareness can be public or limited to attacker and GM", () => {
+test("PC-to-NPC Jack-In awareness can be public, attacker-only, or GM-only", () => {
   assert.equal(resolveJackInRouting({
     ...DEFAULT_ROUTING_CONFIG,
     playerToNpcJackInAudience: AUDIENCE.PUBLIC
@@ -266,6 +277,14 @@ test("PC-to-NPC Jack-In awareness can be public or limited to attacker and GM", 
     targetIsPlayer: false,
     targetAware: true
   }).audience, AUDIENCE.SOURCE_OWNERS);
+  assert.equal(resolveJackInRouting({
+    ...DEFAULT_ROUTING_CONFIG,
+    playerToNpcJackInAudience: AUDIENCE.GM
+  }, {
+    sourceIsPlayer: true,
+    targetIsPlayer: false,
+    targetAware: true
+  }).audience, AUDIENCE.GM);
 });
 
 test("PC-to-NPC Quickhack and all PC-to-PC results are public", () => {
