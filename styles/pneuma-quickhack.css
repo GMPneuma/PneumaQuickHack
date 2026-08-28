@@ -30,13 +30,9 @@
   padding: 0.55rem 0.65rem;
 }
 
-.cpr-block.pneuma-quickhack-result-card::before {
-  background: linear-gradient(180deg, #f7f7f7 0%, #eeeeee 100%);
-}
-
 .pneuma-quickhack-result-title {
   align-items: baseline;
-  border-bottom: 1px solid var(--cpr-background-chat-border, #477b24);
+  border-bottom: 1px solid;
   display: flex;
   gap: 0.5rem;
   justify-content: space-between;
@@ -58,7 +54,7 @@
 }
 
 .pneuma-quickhack-result-title .pneuma-quickhack-outcome {
-  border: 1px solid currentColor;
+  border: 1px solid;
   border-radius: 3px;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
@@ -85,15 +81,14 @@
 
 .pneuma-quickhack-effect-slot {
   background: rgba(0, 0, 0, 0.045);
-  border: 1px solid rgba(0, 0, 0, 0.14);
+  border: 1px solid;
   margin-top: 0.45rem;
   padding: 0.4rem 0.5rem;
 }
 
 .pneuma-quickhack-effect-slot.failure {
   background: rgba(180, 0, 0, 0.08);
-  border-color: rgba(180, 0, 0, 0.35);
-  color: #8b0000;
+  color: red;
 }
 
 .pneuma-quickhack-picker-prompt {
@@ -111,7 +106,7 @@
 }
 
 .pneuma-quickhack-picker-tier {
-  border: 1px solid var(--color-border-light-2, #777);
+  border: 1px solid;
   border-radius: 5px;
   margin: 0;
   padding: 0.45rem;
@@ -168,7 +163,7 @@
 }
 
 .pneuma-quickhack-force-out-actions {
-  border-top: 1px solid var(--color-border-light-2, #777);
+  border-top: 1px solid;
   margin-top: 0.65rem;
   padding-top: 0.65rem;
 }
@@ -231,7 +226,7 @@
 
 .pneuma-workflow-row {
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid var(--color-border-light-2, #777);
+  border: 1px solid;
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   display: grid;
@@ -242,7 +237,7 @@
 .pneuma-workflow-path {
   align-items: center;
   background: rgba(0, 0, 0, 0.09);
-  border-right: 1px solid var(--color-border-light-2, #777);
+  border-right: 1px solid;
   display: flex;
   gap: 0.45rem;
   justify-content: center;
@@ -258,7 +253,7 @@
 .pneuma-workflow-actor {
   align-items: center;
   background: rgba(0, 0, 0, 0.08);
-  border: 1px solid currentColor;
+  border: 1px solid;
   border-radius: 5px;
   display: flex;
   flex: 1 1 0;
@@ -305,21 +300,21 @@
 
 .pneuma-workflow-action {
   background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(0, 0, 0, 0.18);
+  border: 1px solid;
   border-radius: 5px;
   padding: 0.65rem;
 }
 
 .pneuma-workflow-action.jack-in {
-  border-top: 3px solid #4b708b;
+  border-top: 3px solid;
 }
 
 .pneuma-workflow-action.quickhack {
-  border-top: 3px solid var(--cpr-red, #9f1b1b);
+  border-top: 3px solid;
 }
 
 .pneuma-workflow-action h3 {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
+  border-bottom: 1px solid;
   font-size: 1rem;
   margin: 0 0 0.55rem;
   padding-bottom: 0.35rem;
@@ -356,7 +351,7 @@
 
 .pneuma-settings-note {
   background: rgba(0, 0, 0, 0.06);
-  border-left: 3px solid var(--cpr-red, #9f1b1b);
+  border-left: 3px solid;
   font-size: 0.82rem;
   margin: 0 0 0.65rem;
   padding: 0.4rem 0.5rem;
@@ -383,7 +378,7 @@
   }
 
   .pneuma-workflow-path {
-    border-bottom: 1px solid var(--color-border-light-2, #777);
+    border-bottom: 1px solid;
     border-right: 0;
   }
 }

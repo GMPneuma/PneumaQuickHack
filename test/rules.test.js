@@ -27,9 +27,24 @@ import { resolveMessageDelivery } from "../scripts/src/messages.js";
 import { forceOutInterfaceMode } from "../scripts/src/force-out.js";
 
 const moduleManifest = JSON.parse(readFileSync(new URL("../module.json", import.meta.url), "utf8"));
+const moduleStyles = readFileSync(new URL("../styles/pneuma-quickhack.css", import.meta.url), "utf8");
 
 test("module socket support is enabled for cross-client contests", () => {
   assert.equal(moduleManifest.socket, true);
+});
+
+test("module borders inherit their colors from the active Foundry theme", () => {
+  assert.doesNotMatch(
+    moduleStyles,
+    /border(?:-(?:top|right|bottom|left))?(?:-color)?\s*:[^;]*(?:#|rgba?\(|var\(|currentColor)/i
+  );
+});
+
+test("Quickhack result cards inherit their surface from the CPR theme", () => {
+  assert.doesNotMatch(
+    moduleStyles,
+    /\.cpr-block\.pneuma-quickhack-result-card::before\s*\{[^}]*background\s*:/i
+  );
 });
 
 test("message routing defaults match the standard Quickhack workflow", () => {
