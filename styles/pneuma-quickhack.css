@@ -191,10 +191,6 @@
   transform: translateY(-50%);
 }
 
-.pneuma-quickhack-item .weapon-image img {
-  filter: drop-shadow(0 0 0.2rem var(--cpr-red, #c90000));
-}
-
 .pneuma-quickhack-item .weapon-attack > a,
 .pneuma-quickhack-item .weapon-damage > a {
   align-items: center;

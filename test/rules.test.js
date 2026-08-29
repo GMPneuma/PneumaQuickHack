@@ -47,6 +47,13 @@ test("Quickhack result cards inherit their surface from the CPR theme", () => {
   );
 });
 
+test("Quickhack inventory artwork has no module-applied glow", () => {
+  assert.doesNotMatch(
+    moduleStyles,
+    /\.pneuma-quickhack-item\s+\.weapon-image\s+img\s*\{[^}]*filter\s*:/i
+  );
+});
+
 test("message routing defaults match the standard Quickhack workflow", () => {
   assert.deepEqual(DEFAULT_ROUTING_CONFIG, {
     npcToPlayerJackInAudience: AUDIENCE.TARGET_OWNERS,
